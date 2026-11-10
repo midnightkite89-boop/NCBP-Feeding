@@ -1,3 +1,4 @@
+import { I } from '../components/Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { daysBetween } from '../care';
@@ -66,7 +67,7 @@ function PhotoGrid({ paths, urls }: { paths: string[]; urls: Record<string, stri
 }
 
 /** Take or choose photos; shows small previews before saving */
-function PhotoPicker({ files, onChange, label = '📷 Add photos' }: { files: File[]; onChange: (f: File[]) => void; label?: string }) {
+function PhotoPicker({ files, onChange, label = 'Add photos' }: { files: File[]; onChange: (f: File[]) => void; label?: string }) {
   const input = useRef<HTMLInputElement>(null);
   const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
   useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews]);
@@ -125,7 +126,7 @@ export function Health() {
 
   return (
     <div className="health-page">
-      <h1 className="page-title">🩺 Health</h1>
+      <h1 className="page-title">Health</h1>
       <div className="bird-actions">
         <Link to="/health/issue/new" className="btn btn-primary btn-lg">
           + Health issue
@@ -155,7 +156,7 @@ export function Health() {
                         Day {daysBetween(i.started_on, today) + 1} · {n} update{n === 1 ? '' : 's'}
                         {ps.last ? ` · last photo ${ps.days === 0 ? 'today' : `${ps.days}d ago`}` : ''}
                       </span>
-                      {ps.due && <span className="photo-due">📷 Photo due</span>}
+                      {ps.due && <span className="photo-due"><I n="photo" /> Photo due</span>}
                     </span>
                     <span className="more-chevron" aria-hidden="true">
                       ›
@@ -207,13 +208,13 @@ export function DosesDue({ birdId, compact }: { birdId?: string; compact?: boole
   const nameOf = (id: string) => birds.find((b) => b.id === id)?.name ?? '?';
   return (
     <section className={compact ? 'doses-due compact' : 'panel doses-due'}>
-      {!compact && <h2>💊 Medication today</h2>}
+      {!compact && <h2><I n="meds" /> Medication today</h2>}
       <ul className="dose-list">
         {list.map(({ med, given, left }) => (
           <li key={med.id} className={left === 0 ? 'done' : ''}>
             <div className="dose-info">
               <Link to={`/health/med/${med.id}`}>
-                <strong>{birdId ? '💊 ' : `${nameOf(med.bird_id)}: `}</strong>
+                <strong>{birdId ? <I n="meds" /> : `${nameOf(med.bird_id)}: `}</strong>
                 {med.name_dose} – {med.amount}
               </Link>
               <div className="meta">
@@ -455,11 +456,11 @@ export function IssuePage() {
       {bird?.drive_folder_url && (
         <p>
           <a href={bird.drive_folder_url} target="_blank" rel="noreferrer">
-            📁 {bird.name}'s Drive folder
+            <I n="folder" /> {bird.name}'s Drive folder
           </a>
         </p>
       )}
-      {ps.due && <p className="photo-due big">📷 A photo is due (every {issue.photo_every_days} day{issue.photo_every_days === 1 ? '' : 's'})</p>}
+      {ps.due && <p className="photo-due big"><I n="photo" /> A photo is due (every {issue.photo_every_days} day{issue.photo_every_days === 1 ? '' : 's'})</p>}
 
       {!issue.closed_at && (
         <section className="panel">
@@ -482,7 +483,7 @@ export function IssuePage() {
 
       {first && latest && first !== latest && (
         <button className="btn btn-outline btn-lg compare-btn" onClick={() => setCompare(!compare)} aria-expanded={compare}>
-          {compare ? 'Hide comparison' : '◧ Compare first and latest photo'}
+          {compare ? 'Hide comparison' : 'Compare first and latest photo'}
         </button>
       )}
       {compare && first && latest && (
@@ -693,7 +694,7 @@ export function NewMedication() {
           </select>
         </label>
       )}
-      <PhotoPicker files={files} onChange={setFiles} label="📷 Photo of the prescription" />
+      <PhotoPicker files={files} onChange={setFiles} label="Photo of the prescription" />
       <label className="field">
         <span>Name of medication and strength</span>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Meloxicam 1.5mg/ml oral" />
@@ -815,7 +816,7 @@ export function MedicationPage() {
         ‹ Back
       </button>
       <h1 className="page-title">
-        💊 {bird?.name ?? '?'} · {med.name_dose}
+        <I n="meds" /> {bird?.name ?? '?'} · {med.name_dose}
       </h1>
       {med.stopped_at && (
         <p className="warn">

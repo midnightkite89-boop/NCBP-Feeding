@@ -1,3 +1,4 @@
+import { I } from './Icon';
 import { useState } from 'react';
 import { useStore } from '../store';
 import { todaysFeed, targetRange, weightWarning, type BirdStatus } from '../status';
@@ -100,7 +101,7 @@ export function LogSheet({ bird, status: birdState, onClose, initialMode = 'fed'
         }}
       />
       {weightInvalid && <p className="warn">That doesn't look like a weight.</p>}
-      {warning && <p className="warn">⚠ {warning}</p>}
+      {warning && <p className="warn"><I n="concern" /> {warning}</p>}
 
       <label className="field">
         <span>Notes</span>
@@ -121,7 +122,7 @@ export function LogSheet({ bird, status: birdState, onClose, initialMode = 'fed'
       )}
       {status === 'fed' && (
         <div className="field also-flown">
-          <span>✈ Also flown? (tap the type, tap again to clear)</span>
+          <span><I n="fly" /> Also flown? (tap the type, tap again to clear)</span>
           <div className="flight-types">
             {FLIGHT_ORDER.filter((t) => t !== 'other').map((t) => (
               <button type="button" key={t} aria-pressed={alsoFlown === t} className={`btn btn-lg flight-type${alsoFlown === t ? ' on' : ''}`} onClick={() => setAlsoFlown(alsoFlown === t ? null : t)}>

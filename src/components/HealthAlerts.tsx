@@ -1,3 +1,4 @@
+import { I } from './Icon';
 import { Link } from 'react-router-dom';
 import { photoStatus } from '../health';
 import { useStore } from '../store';
@@ -14,8 +15,8 @@ export function HealthAlerts({ bird }: { bird: Bird }) {
         const due = photoStatus(i, healthEntries, today).due;
         return (
           <Link key={i.id} to={`/health/issue/${i.id}`} className={`health-alert${due ? ' photo-due-line' : ''}`}>
-            🩺 {i.title}
-            {due && <strong> · 📷 photo due</strong>}
+            <I n="health" /> {i.title}
+            {due && <strong> · <I n="photo" /> photo due</strong>}
           </Link>
         );
       })}

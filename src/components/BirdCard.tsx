@@ -1,3 +1,4 @@
+import { I } from './Icon';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
@@ -113,7 +114,7 @@ export function BirdCard({ bird, detailed = false }: { bird: Bird; detailed?: bo
       )}
       {stillToGive && <p className="still-to-give">Still to give: {stillToGive}</p>}
       {!stillToGive && status.planned && needsFeeding(state) && <p className="planned-food">Today's food: {status.planned.label}</p>}
-      {concern && <p className="concern-line">⚠ {concern.notes}</p>}
+      {concern && <p className="concern-line"><I n="concern" /> {concern.notes}</p>}
       {has('leftovers') && <LeftoverLine birds={[bird]} />}
       <DosesDue birdId={bird.id} compact />
       <HealthAlerts bird={bird} />
@@ -152,12 +153,12 @@ export function BirdCard({ bird, detailed = false }: { bird: Bird; detailed?: bo
           )}
           {has('leftovers') && (
             <button className="btn btn-outline btn-lg" onClick={() => setSheet('left')}>
-              🍗 Food left
+              <I n="left" /> Food left
             </button>
           )}
           {bird.team !== 'aviary' && (
             <button className="btn btn-outline btn-lg" onClick={() => setSheet('flown')}>
-              ✈ Fly / Feed
+              <I n="fly" /> Fly / Feed
             </button>
           )}
           <button className="btn btn-outline btn-lg" onClick={() => setSheet('more')} aria-label={`More for ${bird.name}`}>
@@ -170,9 +171,9 @@ export function BirdCard({ bird, detailed = false }: { bird: Bird; detailed?: bo
       {sheet === 'more' && (
         <Sheet title={bird.name} onClose={() => setSheet(null)}>
           <div className="more-list">
-            <button onClick={() => setSheet('log')}>⚖ Weight / other food</button>
-            <button onClick={() => setSheet('setfood')}>🍽 Set today's food</button>
-            <button onClick={() => setSheet('targets')}>🎯 Target weight / usual amount</button>
+            <button onClick={() => setSheet('log')}><I n="weigh" /> Weight / other food</button>
+            <button onClick={() => setSheet('setfood')}><I n="food" /> Set today's food</button>
+            <button onClick={() => setSheet('targets')}><I n="target" /> Target weight / usual amount</button>
             {!checked && (
               <button
                 onClick={() => {
@@ -184,17 +185,17 @@ export function BirdCard({ bird, detailed = false }: { bird: Bird; detailed?: bo
               </button>
             )}
             <button className="more-warn" onClick={() => setSheet('concern')}>
-              ⚠ Raise a concern
+              <I n="concern" /> Raise a concern
             </button>
-            <button onClick={() => setSheet('request')}>✎ Special request</button>
+            <button onClick={() => setSheet('request')}><I n="request" /> Special request</button>
             <Link to={`/health/issue/new?bird=${bird.id}`} onClick={() => setSheet(null)}>
-              🩺 Health issue / photo
+              <I n="health" /> Health issue / photo
             </Link>
             <Link to={`/health/med/new?bird=${bird.id}`} onClick={() => setSheet(null)}>
-              💊 Add medication
+              <I n="meds" /> Add medication
             </Link>
             <Link to={`/bird/${bird.id}`} onClick={() => setSheet(null)}>
-              📋 History and details
+              <I n="history" /> History and details
             </Link>
           </div>
         </Sheet>
@@ -259,10 +260,10 @@ export function BirdRow({ bird }: { bird: Bird }) {
             ⚠
           </span>
         )}
-        {status.flights.length > 0 && <span className="row-flag plain" aria-label="Flown today">✈</span>}
-        {leavingFood && <span className="row-flag plain" aria-label="Keeps leaving food">🍗</span>}
-        {medsLeft > 0 && <span className="row-flag plain" aria-label="Medication due">💊</span>}
-        {photoDue && <span className="row-flag plain" aria-label="Health photo due">📷</span>}
+        {status.flights.length > 0 && <span className="row-flag plain" aria-label="Flown today"><I n="fly" size={17} /></span>}
+        {leavingFood && <span className="row-flag flag-left" aria-label="Keeps leaving food"><I n="left" size={17} /></span>}
+        {medsLeft > 0 && <span className="row-flag flag-meds" aria-label="Medication due"><I n="meds" size={17} /></span>}
+        {photoDue && <span className="row-flag plain" aria-label="Health photo due"><I n="photo" size={17} /></span>}
         <span className="row-right">{right}</span>
       </div>
       {open && <BirdCard bird={bird} />}

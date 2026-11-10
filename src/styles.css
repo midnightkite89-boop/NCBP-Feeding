@@ -1068,3 +1068,15 @@ main.full-screen { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 .score-grid button.on { background: var(--ink); color: #fff; }
 .bird-checkups { margin: 16px 0; }
 .bird-checkups ul { padding-left: 1.1rem; }
+
+/* Line icons */
+:root { --brand-tint: #f6e7ef; }
+.ic { display: inline-block; vertical-align: -0.2em; flex-shrink: 0; }
+.tab-icon { display: inline-flex; }
+.tab-icon .ic { vertical-align: 0; }
+.ic-tile { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9px; background: var(--brand-tint); color: var(--brand); flex-shrink: 0; }
+.ic-tile .ic { vertical-align: 0; }
+.row-flag { display: inline-flex; align-items: center; }
+.row-flag.flag-left { color: #a16207; }
+.row-flag.flag-meds { color: var(--brand); }
+.leftover-line.flagged .ic { color: #a16207; }

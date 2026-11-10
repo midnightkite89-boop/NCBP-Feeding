@@ -1,3 +1,4 @@
+import { I } from './Icon';
 import { useState } from 'react';
 import { formatQty } from '../food';
 import { leftoverLabel, leftoverTrend } from '../leftovers';
@@ -66,12 +67,12 @@ export function LeftoverLine({ birds }: { birds: Bird[] }) {
   const ids = birds.map((b) => b.id);
   const trend = leftoverTrend(ids, leftovers, today);
   const todays = leftovers.filter((l) => ids.includes(l.bird_id) && l.log_date === today);
-  if (trend.flagged) return <p className="leftover-line flagged">🍗 {trend.text}</p>;
+  if (trend.flagged) return <p className="leftover-line flagged"><I n="left" /> {trend.text}</p>;
   if (todays.length === 0) return null;
   const l = todays.at(-1)!;
   return (
     <p className="leftover-line">
-      🍗 Left {leftoverLabel(l)} ({formatTime(l.logged_at)})
+      <I n="left" /> Left {leftoverLabel(l)} ({formatTime(l.logged_at)})
     </p>
   );
 }

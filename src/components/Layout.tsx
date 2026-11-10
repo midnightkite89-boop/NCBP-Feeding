@@ -1,3 +1,4 @@
+import { I, type IconName } from './Icon';
 import { useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { has } from '../centre';
@@ -7,12 +8,12 @@ import { ActingBar } from './ActingBar';
 
 const UNDO_MS = 10_000;
 
-const TABS = [
-  { to: '/', label: 'Today', icon: '🍽', end: true },
-  { to: '/weigh', label: 'Weigh', icon: '⚖' },
-  { to: '/clean', label: 'Clean', icon: '🧽' },
-  ...(has('ferrets') ? [{ to: '/ferrets', label: 'Ferrets', icon: '🐾' }] : []),
-  { to: '/more', label: 'More', icon: '⋯' },
+const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
+  { to: '/', label: 'Today', icon: 'food', end: true },
+  { to: '/weigh', label: 'Weigh', icon: 'weigh' },
+  { to: '/clean', label: 'Clean', icon: 'clean' },
+  ...(has('ferrets') ? [{ to: '/ferrets', label: 'Ferrets', icon: 'ferret' as const }] : []),
+  { to: '/more', label: 'More', icon: 'more' },
 ];
 
 export function Layout() {
@@ -70,7 +71,7 @@ export function Layout() {
               className={({ isActive }) => (isActive || (t.to === '/more' && moreActive) ? 'active' : '')}
             >
               <span className="tab-icon" aria-hidden="true">
-                {t.icon}
+                <I n={t.icon} size={24} />
               </span>
               {t.to === '/clean' && alertCount > 0 && (
                 <span className="tab-badge" aria-label={alerts.join(', ')}>

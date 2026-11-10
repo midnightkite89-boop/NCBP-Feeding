@@ -1,3 +1,4 @@
+import { I } from '../components/Icon';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BirdCard, BirdRow } from '../components/BirdCard';
@@ -107,7 +108,7 @@ export function Today() {
           {has('dailyChecks') && toCheck > 0 && <span className="sum-chip plain">{toCheck} to check</span>}
           {concerns.length > 0 && (
             <button className={`sum-chip warn`} onClick={() => setPanel(panel === 'concerns' ? null : 'concerns')} aria-expanded={panel === 'concerns'}>
-              ⚠ {concerns.length} concern{concerns.length === 1 ? '' : 's'}
+              <I n="concern" size={16} /> {concerns.length} concern{concerns.length === 1 ? '' : 's'}
             </button>
           )}
           <button className="sum-chip plain" onClick={() => setPanel(panel === 'requests' ? null : 'requests')} aria-expanded={panel === 'requests'}>
@@ -115,23 +116,23 @@ export function Today() {
           </button>
           {dosesLeft > 0 && (
             <button className="sum-chip meds" onClick={() => setPanel(panel === 'meds' ? null : 'meds')} aria-expanded={panel === 'meds'}>
-              💊 {dosesLeft} dose{dosesLeft === 1 ? '' : 's'} due
+              <I n="meds" size={16} /> {dosesLeft} dose{dosesLeft === 1 ? '' : 's'} due
             </button>
           )}
           {photosDue > 0 && (
             <Link className="sum-chip meds" to="/health">
-              📷 {photosDue} photo{photosDue === 1 ? '' : 's'} due
+              <I n="photo" size={16} /> {photosDue} photo{photosDue === 1 ? '' : 's'} due
             </Link>
           )}
           {cleaning.alertCount > 0 && (
             <Link className="sum-chip clean-alert" to="/clean" title={cleaning.alerts.join(', ')}>
-              🧽 {cleaning.alerts[0]}
+              <I n="clean" size={16} /> {cleaning.alerts[0]}
               {cleaning.alerts.length > 1 ? ` +${cleaning.alerts.length - 1}` : ''}
             </Link>
           )}
           {frost && (
             <button className="sum-chip frost" onClick={() => setPanel(panel === 'frost' ? null : 'frost')} aria-expanded={panel === 'frost'}>
-              ❄ Frost
+              <I n="frost" size={16} /> Frost
             </button>
           )}
         </div>
@@ -155,12 +156,12 @@ export function Today() {
       <div className="today-actions">
         {toFeed > 0 && (
           <Link to="/round" className="btn btn-primary btn-lg">
-            🧭 Feeding round
+            <I n="round" /> Feeding round
           </Link>
         )}
         {has('sessions') && (
           <Link to="/session" className="btn btn-outline btn-lg">
-            ✈ Log a session
+            <I n="fly" /> Log a session
           </Link>
         )}
       </div>
@@ -193,7 +194,7 @@ export function Today() {
               </button>
             </div>
             <button className="btn btn-outline view-toggle" onClick={() => setView(view === 'rows' ? 'cards' : 'rows')} aria-label={view === 'rows' ? 'Show full cards' : 'Show compact rows'}>
-              {view === 'rows' ? '▤ Cards' : '☰ Rows'}
+              {view === 'rows' ? <><I n="cards" /> Cards</> : <><I n="rows" /> Rows</>}
             </button>
           </div>
         )}

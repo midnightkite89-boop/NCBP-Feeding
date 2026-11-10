@@ -1,3 +1,4 @@
+import { I } from './Icon';
 import { useState } from 'react';
 import { CLEAN_LABEL, agoText, aviaryCleanState, bathNeeds, bathStatus, bathsToday, isWinter, openConcerns, sectionCleanToday } from '../care';
 import { aviaryLabel } from '../aviary';
@@ -113,7 +114,7 @@ export function AviaryCleanRow({ aviary, birds, onRemove, fromRota }: { aviary: 
       <div className="clean-info">
         <div className="clean-title">
           <strong>{aviaryLabel(aviary)}</strong> <span className="muted">{birds.map((b) => b.name).join(', ')}</span>
-          {aviary.cold_spot && <span className="cold-tag">❄ cold spot</span>}
+          {aviary.cold_spot && <span className="cold-tag"><I n="frost" size={15} /> cold spot</span>}
           {fromRota && <span className="rota-tag">rota</span>}
         </div>
         <div className="clean-last">
@@ -160,7 +161,7 @@ export function BathLine({ aviary }: { aviary: Aviary }) {
   return (
     <div className={`bath-line${needs ? ` bath-needs-${needs}` : ''}`}>
       <span className="bath-text">
-        🛁 Bath {part('checked', bath.check)} · {part('cleaned', bath.clean)}
+        <I n="bath" /> Bath {part('checked', bath.check)} · {part('cleaned', bath.clean)}
       </span>
       <span className="bath-btns">
         <button type="button" className="btn btn-outline bath-btn" onClick={() => log('bath_check')}>
@@ -199,7 +200,7 @@ export function BathsCheckedButton({ aviaries, label }: { aviaries: Aviary[]; la
     );
   return (
     <button className="btn btn-outline baths-all" onClick={() => setConfirm(true)}>
-      🛁 All {aviaries.length} baths checked
+      <I n="bath" /> All {aviaries.length} baths checked
     </button>
   );
 }
@@ -244,7 +245,7 @@ export function FrostBanner() {
   const at = forecast.lowAt ? forecast.lowAt.slice(11, 16) : '';
   return (
     <div className="frost-banner" role="alert">
-      <strong>❄ Frost tonight: down to {forecast.low.toString().replace('-', '−')} °C{at && ` around ${at}`}.</strong> Take baths in for the night
+      <strong><I n="frost" /> Frost tonight: down to {forecast.low.toString().replace('-', '−')} °C{at && ` around ${at}`}.</strong> Take baths in for the night
       {cold.length > 0 ? ` and check cold spots: ${cold.map((a) => aviaryLabel(a)).join(', ')}.` : '.'}
     </div>
   );
@@ -311,7 +312,7 @@ export function ConcernList() {
   if (open.length === 0) return null;
   return (
     <section>
-      <h2 className="concern-head">⚠ Concerns ({open.length})</h2>
+      <h2 className="concern-head"><I n="concern" /> Concerns ({open.length})</h2>
       <ul className="requests">
         {open.map((c) => (
           <li key={c.id} className="request concern">

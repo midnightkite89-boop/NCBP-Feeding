@@ -1,3 +1,4 @@
+import { I } from '../components/Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { aviaryLabel, feedStops, routeSort } from '../aviary';
@@ -33,7 +34,7 @@ export function Round() {
         <h1 className="page-title">Which round?</h1>
         {names.map((n, i) => (
           <Link key={n} to={`/round?r=${i + 1}`} className="btn btn-primary btn-xl">
-            🧭 {n}
+            <I n="round" /> {n}
           </Link>
         ))}
         <Link to="/" className="btn btn-outline btn-lg">
@@ -294,13 +295,13 @@ function RoundOf({ round }: { round: number }) {
           {bird.species}
           {weight != null && ` · ${formatWeight(weight, bird.weight_unit)}`}
         </div>
-        {warning && <p className="warn">⚠ {warning}</p>}
+        {warning && <p className="warn"><I n="concern" /> {warning}</p>}
         {birdMeds.length > 0 && (
           <div className="round-meds" role="alert">
             {birdMeds.map(({ med, given, left }) => (
               <div key={med.id} className="round-med">
                 <div className="round-med-info">
-                  <strong>💊 {med.name_dose}</strong>
+                  <strong><I n="meds" /> {med.name_dose}</strong>
                   <div>
                     {med.amount}
                     {med.times_per_day > 1 && ` · dose ${given.length + 1} of ${med.times_per_day}`}
@@ -318,7 +319,7 @@ function RoundOf({ round }: { round: number }) {
         <TodayEntries bird={bird} />
         {stillToGive && <p className="still-to-give">Still to give: {stillToGive}</p>}
         {!stillToGive && planned && needsFeeding(state) && <p className="planned-food">Today's food: {planned.label}</p>}
-        {concern && <p className="concern-line">⚠ {concern.notes}</p>}
+        {concern && <p className="concern-line"><I n="concern" /> {concern.notes}</p>}
         {has('leftovers') && <LeftoverLine birds={[bird]} />}
         {bird.care_notes && <p className="care-notes">{bird.care_notes}</p>}
         <RequestList requests={requests.filter((r) => r.bird_id === bird.id)} showBird={false} />
@@ -372,11 +373,11 @@ function RoundOf({ round }: { round: number }) {
           )}
           {bird.team !== 'aviary' && (
             <button className="btn btn-outline btn-lg" onClick={() => setSheet('flown')}>
-              ✈ Fly / Feed
+              <I n="fly" /> Fly / Feed
             </button>
           )}
           <button className="btn btn-outline btn-lg round-concern" onClick={() => setSheet('concern')}>
-            ⚠ Concern
+            <I n="concern" /> Concern
           </button>
         </div>
       </div>
@@ -439,7 +440,7 @@ function RoundAviaryStop({ birds, onFed }: { birds: Bird[]; onFed: () => void })
               <div key={med.id} className="round-med">
                 <div className="round-med-info">
                   <strong>
-                    💊 {bird.name}: {med.name_dose}
+                    <I n="meds" /> {bird.name}: {med.name_dose}
                   </strong>
                   <div>{med.amount}</div>
                 </div>
@@ -522,7 +523,7 @@ function RoundBriefing({
 
       {meds.length > 0 && (
         <section className="panel briefing-meds">
-          <h2>💊 Medication to take with you</h2>
+          <h2><I n="meds" /> Medication to take with you</h2>
           <ul>
             {meds.map(({ med, left }) => (
               <li key={med.id}>
@@ -536,7 +537,7 @@ function RoundBriefing({
       )}
       {concerns.length > 0 && (
         <section className="panel">
-          <h2>⚠ Concerns</h2>
+          <h2><I n="concern" /> Concerns</h2>
           <ul>
             {concerns.map((c) => (
               <li key={c.id}>
@@ -548,7 +549,7 @@ function RoundBriefing({
       )}
       {birdRequests.length > 0 && (
         <section className="panel">
-          <h2>✎ Special requests</h2>
+          <h2><I n="request" /> Special requests</h2>
           <ul>
             {birdRequests.map((r) => (
               <li key={r.id}>
@@ -561,7 +562,7 @@ function RoundBriefing({
       )}
       {photos.length > 0 && (
         <section className="panel">
-          <h2>📷 Health photos due</h2>
+          <h2><I n="photo" /> Health photos due</h2>
           <ul>
             {photos.map((i) => (
               <li key={i.id}>

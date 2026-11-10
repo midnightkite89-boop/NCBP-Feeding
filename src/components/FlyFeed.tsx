@@ -1,3 +1,4 @@
+import { I, type IconName } from './Icon';
 import { useState } from 'react';
 import { FLIGHT_ORDER, hhmm, lastFlightType, rememberFlightType, todayAt } from '../flight';
 import { feedLabel, formatQty, joinFeedItems, splitAmount, splitFeedItems, type FeedItem } from '../food';
@@ -112,10 +113,10 @@ export function FlyFeedSheet({ bird, onClose, onSaved }: { bird: Bird; onClose: 
 
       <div className="flyfeed-toggles">
         <button type="button" className={`flyfeed-toggle${fly ? ' on' : ''}`} aria-pressed={fly} onClick={() => (setFly(!fly), setError(null))}>
-          {fly ? '✓ ' : ''}✈ Flown
+          {fly ? '✓ ' : ''}<I n="fly" /> Flown
         </button>
         <button type="button" className={`flyfeed-toggle${feed ? ' on' : ''}`} aria-pressed={feed} onClick={() => (setFeed(!feed), setError(null))}>
-          {feed ? '✓ ' : ''}🍽 Fed
+          {feed ? '✓ ' : ''}<I n="food" /> Fed
         </button>
       </div>
 
@@ -143,14 +144,20 @@ export function FlyFeedSheet({ bird, onClose, onSaved }: { bird: Bird; onClose: 
   );
 }
 
+/** Icon for one of today's entries */
+export function entryIcon(l: FeedLog): IconName {
+  return l.status === 'flown' ? 'fly' : l.status === 'fed' ? 'food' : l.status === 'left' ? 'left' : l.status === 'fasting' ? 'calendar' : 'weigh';
+}
+
 /** Short text for one of today's entries */
 export function entryText(l: FeedLog, bird: Bird): string {
-  if (l.status === 'flown') return `✈ ${formatTime(l.logged_at)} ${flightTypeLabel(l.flight_type) ?? 'Flown'}`;
-  if (l.status === 'fed') return `🍽 ${formatTime(l.logged_at)} ${feedLabel(l.amount, l.food_type) || 'Fed'}${l.more_due ? ' (more due)' : ''}`;
-  if (l.status === 'fasting') return `– ${formatTime(l.logged_at)} Fasting`;
+  if (l.status === 'flown') return `${formatTime(l.logged_at)} ${flightTypeLabel(l.flight_type) ?? 'Flown'}`;
+  if (l.status === 'fed') return `${formatTime(l.logged_at)} ${feedLabel(l.amount, l.food_type) || 'Fed'}${l.more_due ? ' (more due)' : ''}`;
+  if (l.status === 'fasting') return `${formatTime(l.logged_at)} Fasting`;
+  if (l.status === 'left') return `${formatTime(l.logged_at)} Left ${feedLabel(l.amount, l.food_type) || 'food'}`;
   const w = l.weight_g != null ? formatWeight(l.weight_g, bird.weight_unit) : '';
   const f = l.food_type || l.amount ? `food set: ${feedLabel(l.amount, l.food_type)}` : '';
-  return `⚖ ${formatTime(l.logged_at)} ${[w, f].filter(Boolean).join(' · ')}`;
+  return `${formatTime(l.logged_at)} ${[w, f].filter(Boolean).join(' · ')}`;
 }
 
 /** Today's entries for a bird as tappable chips; tap one to change or remove it */
@@ -163,7 +170,7 @@ export function TodayEntries({ bird }: { bird: Bird }) {
     <div className="today-entries">
       {logs.map((l) => (
         <button key={l.id} type="button" className={`entry-chip entry-${l.status}`} onClick={() => setEditing(l)} aria-label={`Change: ${entryText(l, bird)}`}>
-          {entryText(l, bird)}
+          <I n={entryIcon(l)} size={15} /> {entryText(l, bird)}
           <span className="entry-who"> · {logName(l)}</span>
           {l.pending && <span className="pending"> · not sent</span>}
           <span className="entry-edit" aria-hidden="true">

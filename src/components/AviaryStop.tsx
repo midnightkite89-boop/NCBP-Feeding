@@ -1,3 +1,4 @@
+import { I } from './Icon';
 import { useState } from 'react';
 import { aviaryLabel } from '../aviary';
 import { has } from '../centre';
@@ -88,7 +89,7 @@ export function AviaryRow({ birds }: { birds: Bird[] }) {
           {birdsLabel(birds)} <span className="row-shared">· shared</span>
         </span>
         {birds[0].aviary_id && <AviaryNumber birds={birds} />}
-        {stop.leavingFood && <span className="row-flag plain" aria-label="Keeps leaving food">🍗</span>}
+        {stop.leavingFood && <span className="row-flag flag-left" aria-label="Keeps leaving food"><I n="left" size={17} /></span>}
         <span className="row-right">{right}</span>
       </div>
       {open && <AviaryCard birds={birds} />}
@@ -126,7 +127,7 @@ export function AviaryCard({ birds }: { birds: Bird[] }) {
         <div className="card-actions-row">
           {has('leftovers') && (
             <button className="btn btn-outline btn-lg" onClick={() => setLeftOpen(true)}>
-              🍗 Food left
+              <I n="left" /> Food left
             </button>
           )}
         </div>

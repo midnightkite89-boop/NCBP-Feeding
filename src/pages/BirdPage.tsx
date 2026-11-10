@@ -1,3 +1,4 @@
+import { I } from '../components/Icon';
 import { BirdCheckups } from './Checkups';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -79,11 +80,11 @@ export function BirdPage() {
         </dl>
         <div className="bird-actions">
           <button className="btn btn-outline" onClick={() => setEditTargets(true)}>
-            ✎ Change target weight / amount
+            <I n="target" /> Change target weight / amount
           </button>
           {bird.drive_folder_url && (
             <a href={bird.drive_folder_url} target="_blank" rel="noreferrer" className="btn btn-outline">
-              📁 Open Drive folder
+              <I n="folder" /> Open Drive folder
             </a>
           )}
           {isAdmin && (
@@ -102,14 +103,14 @@ export function BirdPage() {
         <h2>Health</h2>
         {healthIssues.filter((i) => i.bird_id === bird.id).map((i) => (
           <p key={i.id}>
-            <Link to={`/health/issue/${i.id}`}>🩺 {i.title}</Link> <span className="muted">since {formatDay(i.started_on)}</span>
+            <Link to={`/health/issue/${i.id}`}><I n="health" /> {i.title}</Link> <span className="muted">since {formatDay(i.started_on)}</span>
           </p>
         ))}
         {medications
           .filter((m) => m.bird_id === bird.id && !m.stopped_at && (!m.end_date || m.end_date >= today))
           .map((m) => (
             <p key={m.id}>
-              <Link to={`/health/med/${m.id}`}>💊 {m.name_dose}</Link> <span className="muted">{m.amount} · {scheduleText(m)}</span>
+              <Link to={`/health/med/${m.id}`}><I n="meds" /> {m.name_dose}</Link> <span className="muted">{m.amount} · {scheduleText(m)}</span>
             </p>
           ))}
         <div className="bird-actions">

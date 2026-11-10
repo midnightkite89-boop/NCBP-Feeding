@@ -1,3 +1,4 @@
+import { I } from '../components/Icon';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FoodPicker, QtyStepper } from '../components/FoodPicker';
 import { BirdPhoto } from '../components/BirdPhoto';
@@ -259,7 +260,7 @@ function WeighPanel({
       </div>
       {invalid && <p className="warn">That doesn't look like a weight.</p>}
       {grams != null && previous && <p className="weigh-diff">{changeSince(grams, previous.weight_g, bird.weight_unit)} since last weighed</p>}
-      {warning && <p className="warn">⚠ {warning}</p>}
+      {warning && <p className="warn"><I n="concern" /> {warning}</p>}
 
       <label className="check">
         <input type="checkbox" checked={setFood} onChange={(e) => setSetFood(e.target.checked)} />

@@ -1,3 +1,4 @@
+import { I } from '../components/Icon';
 import { useParams, Link } from 'react-router-dom';
 import { BirdCard } from '../components/BirdCard';
 import { useStore } from '../store';
@@ -43,7 +44,7 @@ export function AviaryPage() {
       <ScanTabs tab={tab} onChange={setTab} />
       {tab === 'clean' ? (
         <>
-          {aviary.cold_spot && <p className="cold-note">❄ Cold spot{aviary.cold_note ? `: ${aviary.cold_note}` : ''}. Check on frost nights.</p>}
+          {aviary.cold_spot && <p className="cold-note"><I n="frost" /> Cold spot{aviary.cold_note ? `: ${aviary.cold_note}` : ''}. Check on frost nights.</p>}
           {isDailySection(aviary.name, careSettings) ? (
             <DailySectionCard section={aviary.name} count={birds.filter((b) => b.status === 'active' && aviaries.some((a) => a.id === b.aviary_id && a.name === aviary.name)).length} />
           ) : (
