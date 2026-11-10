@@ -42,4 +42,4 @@ where p.id = (select id from auth.users where email = v.email);
 
 ## Updates since setup
 
-- [ ] **Health checks (11 Nov 2026):** Supabase → SQL Editor → paste all of `supabase/migrations/024_checkups.sql` → **Run**. Safe to run twice.
+- [x] **Health checks (11 Nov 2026):** Supabase → SQL Editor → paste all of `supabase/migrations/024_checkups.sql` → **Run**. Safe to run twice.
