@@ -31,13 +31,15 @@ eq('nudge unparseable is null', nudgeAmount('half leg', 'Rabbit', 1), null);
 eq('nudge 0 keeps amount', nudgeAmount('2', 'Chick', 0), { amount: '2', food: 'Chick', qty: 2 });
 
 eq('split plain', splitFood('Rabbit'), { base: 'Rabbit', parts: [] });
-eq('split cuts', splitFood('Rabbit saddle + head'), { base: 'Rabbit', parts: ['saddle', 'head'] });
-eq('split typed', splitFood('rabbit Front Legs and head'), { base: 'Rabbit', parts: ['front leg', 'head'] });
+eq('split cuts', splitFood('Pheasant leg + head'), { base: 'Pheasant', parts: ['leg', 'head'] });
+eq('split typed', splitFood('pheasant Legs and head'), { base: 'Pheasant', parts: ['leg', 'head'] });
+eq('centre rabbit cut', splitFood('Rabbit portion'), { base: 'Rabbit', parts: ['portion'] });
 eq('split bad cut', splitFood('Rabbit kidney'), null);
 eq('split pheasant cut on rabbit', splitFood('Rabbit wing'), null);
 eq('join keeps menu order', joinFood('Pheasant', ['head', 'leg']), 'Pheasant leg + head');
 eq('normalise cuts', normaliseFood('pheasant breast, wing'), 'Pheasant wing + breast');
-eq('menu food with cuts', isMenuFood('Rabbit front leg'), true);
+eq('menu food with cuts', isMenuFood('Pheasant leg'), true);
+eq('centre extra food on the menu', isMenuFood('Mackerel'), true);
 eq('menu food plain', isMenuFood('Pheasant'), true);
 eq('not menu: wrong order', isMenuFood('Rabbit head + saddle'), false);
 eq('not menu: typed', isMenuFood('Beef heart'), false);

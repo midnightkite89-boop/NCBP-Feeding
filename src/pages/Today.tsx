@@ -14,6 +14,7 @@ import { birdStatus, needsFeeding } from '../status';
 import { formatDay } from '../time';
 import { aviaryLabel, feedStops, routeSort, sectionPath, sectionRuns } from '../aviary';
 import { AviaryCard, AviaryRow } from '../components/AviaryStop';
+import { has } from '../centre';
 
 const FILTER_KEY = 'smj-today-filter';
 const VIEW_KEY = 'smj-today-view';
@@ -103,7 +104,7 @@ export function Today() {
           <button className={`sum-chip ${toFeed ? 'danger' : 'ok'}`} onClick={() => setFilter(filter === 'todo' ? 'all' : 'todo')} aria-pressed={filter === 'todo'}>
             {toFeed ? `${toFeed} to feed` : '✓ All fed'}
           </button>
-          {toCheck > 0 && <span className="sum-chip plain">{toCheck} to check</span>}
+          {has('dailyChecks') && toCheck > 0 && <span className="sum-chip plain">{toCheck} to check</span>}
           {concerns.length > 0 && (
             <button className={`sum-chip warn`} onClick={() => setPanel(panel === 'concerns' ? null : 'concerns')} aria-expanded={panel === 'concerns'}>
               ⚠ {concerns.length} concern{concerns.length === 1 ? '' : 's'}
@@ -157,9 +158,11 @@ export function Today() {
             🧭 Feeding round
           </Link>
         )}
-        <Link to="/session" className="btn btn-outline btn-lg">
-          ✈ Log a session
-        </Link>
+        {has('sessions') && (
+          <Link to="/session" className="btn btn-outline btn-lg">
+            ✈ Log a session
+          </Link>
+        )}
       </div>
 
       <div className="sticky-filter">

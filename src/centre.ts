@@ -9,6 +9,10 @@ export const CENTRE = {
   lat: 54.235,
   lon: -1.07,
   defaultDisinfectant: 'F10',
+  /** Foods on the menu after the usual six */
+  extraFoods: ['Mackerel', 'Trout', 'Squirrel'],
+  /** Cuts offered for the bigger foods (replaces the standard list where given) */
+  foodParts: { Rabbit: ['portion', 'whole'] } as Record<string, readonly string[]>,
   features: {
     ferrets: false,
     /** GPS flight logs (Marshall AeroVision) */
@@ -25,6 +29,8 @@ export const CENTRE = {
     leftovers: true,
     /** Breeding aviaries: nest checks, eggs, hatchings */
     breeding: true,
+    /** A daily "checked" for every bird (FED counts as one); off = not shown or counted */
+    dailyChecks: false,
   },
 } as const;
 

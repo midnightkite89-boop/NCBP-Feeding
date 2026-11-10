@@ -25,3 +25,10 @@ npm run dev
 | `src/status.ts` | Works out each bird's status: to feed, more due, fed, fast day or fasting. |
 | `src/pages` | Today, the aviary page (`/a/:slug`, opened by QR code) and the bird page |
 | `src/admin` | Birds, aviaries, CSV import, QR sheet, staff |
+
+## Demo mode (dev server only)
+
+Try the app without a login or the real database: start the dev server, run
+`node scripts/build-demo-data.mjs ../ncbp/ncbp-data.sql` once, then open `http://localhost:5174/?demo`.
+Everything happens in that browser. `?demo=reset` starts again from the seed data, and `?demo=off` goes
+back to the real database. Demo mode is never part of the live build.

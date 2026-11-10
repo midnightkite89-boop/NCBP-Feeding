@@ -1035,3 +1035,9 @@ main.full-screen { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 .round-mate {
   margin-right: 0.6rem;
 }
+.round-choose {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}

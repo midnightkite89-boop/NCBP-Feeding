@@ -31,14 +31,12 @@ export function Round() {
     return (
       <div className="round-choose">
         <h1 className="page-title">Which round?</h1>
-        <div className="more-list">
-          {names.map((n, i) => (
-            <Link key={n} to={`/round?r=${i + 1}`} className="btn btn-outline btn-xl">
-              {n}
-            </Link>
-          ))}
-        </div>
-        <Link to="/" className="btn btn-ghost">
+        {names.map((n, i) => (
+          <Link key={n} to={`/round?r=${i + 1}`} className="btn btn-primary btn-xl">
+            🧭 {n}
+          </Link>
+        ))}
+        <Link to="/" className="btn btn-outline btn-lg">
           Cancel
         </Link>
       </div>
@@ -174,7 +172,8 @@ function RoundOf({ round }: { round: number }) {
   if (!briefed && order.length > 0)
     return (
       <RoundBriefing
-        order={order}
+        title={roundNames(careSettings).length > 1 ? roundNames(careSettings)[round - 1] : "Today's round"}
+        order={birdOrder}
         statusOf={statusOf}
         onStart={() => {
           try {
@@ -337,7 +336,7 @@ function RoundOf({ round }: { round: number }) {
               <span className="btn-main">FED</span>
               <span className="btn-sub">
                 {feedText}
-                {changed ? ` (usual ${quickFeedLabel(bird, status)})` : ' · also logs checked'}
+                {changed ? ` (usual ${quickFeedLabel(bird, status)})` : has('dailyChecks') ? ' · also logs checked' : ''}
               </span>
             </button>
             {activeItem && (
@@ -488,11 +487,13 @@ function RoundAviaryStop({ birds, onFed }: { birds: Bird[]; onFed: () => void })
 
 /** Before the round: medication, concerns, requests and anything else to know today */
 function RoundBriefing({
+  title,
   order,
   statusOf,
   onStart,
   onCancel,
 }: {
+  title: string;
   order: Bird[];
   statusOf: (b: Bird) => ReturnType<typeof birdStatus>;
   onStart: () => void;
@@ -516,7 +517,7 @@ function RoundBriefing({
         </button>
         <span className="muted">Before you start</span>
       </div>
-      <h1 className="page-title">Today's round</h1>
+      <h1 className="page-title">{title}</h1>
       {nothing && <p className="muted">Nothing special today: no medication, concerns or requests.</p>}
 
       {meds.length > 0 && (

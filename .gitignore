@@ -7,3 +7,4 @@ dist
 data/
 *.tsbuildinfo
 Vet-notes/
+src/demo/demo-data.json

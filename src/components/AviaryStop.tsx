@@ -42,11 +42,15 @@ export function useAviaryStop(birds: Bird[]) {
 /** e.g. "3 Steller's sea eagles" or "Bruce, Azura" */
 export function birdsLabel(birds: Bird[]): string {
   const species = new Set(birds.map((b) => b.species));
-  const named = birds.filter((b) => b.name !== b.species && !/ \d+$/.test(b.name));
+  // Birds without a real name were called after their species ("Mottled owl 2")
+  const named = birds.filter((b) => b.name !== b.species && !(b.species && b.name.startsWith(`${b.species} `)));
   if (named.length === birds.length) return birds.map((b) => b.name).join(', ');
-  if (species.size === 1) return `${birds.length} ${birds[0].species ?? 'birds'}`;
+  if (named.length > 0) return `${named.map((b) => b.name).join(', ')} + ${birds.length - named.length}`;
+  if (species.size === 1) return `${birds.length} ${plural(birds[0].species ?? 'bird')}`;
   return `${birds.length} birds`;
 }
+
+const plural = (s: string) => (s.endsWith('s') ? s : `${s}s`);
 
 /** Compact row for a shared aviary on Today: one FED for every bird in it. Tap to open. */
 export function AviaryRow({ birds }: { birds: Bird[] }) {

@@ -1,6 +1,8 @@
 // The food menu and half-step quantities used everywhere food is chosen.
 
-export const FOODS = ['Chick', 'Quail', 'Mice', 'Rabbit', 'Rat', 'Pheasant'] as const;
+import { CENTRE } from './centre';
+
+export const FOODS: readonly string[] = ['Chick', 'Quail', 'Mice', 'Rabbit', 'Rat', 'Pheasant', ...CENTRE.extraFoods];
 export const DEFAULT_FOOD = 'Chick';
 
 export const QTY_STEP = 0.5;
@@ -8,12 +10,14 @@ export const QTY_MIN = 0.5;
 export const QTY_MAX = 20;
 
 /** Cuts that can be picked for the bigger foods, e.g. "Rabbit front leg + head". "whole" can't be combined. */
-export const FOOD_PARTS: Record<string, readonly string[]> = {
+const STANDARD_PARTS: Record<string, readonly string[]> = {
   Rabbit: ['front leg', 'back leg', 'saddle', 'head', 'whole'],
   Pheasant: ['leg', 'wing', 'breast', 'head', 'whole'],
 };
+export const FOOD_PARTS: Record<string, readonly string[]> = { ...STANDARD_PARTS, ...CENTRE.foodParts };
 
 const ALIASES: Record<string, string> = { mouse: 'Mice', mice: 'Mice', chick: 'Chick', quail: 'Quail', rabbit: 'Rabbit', rat: 'Rat', pheasant: 'Pheasant' };
+for (const f of CENTRE.extraFoods) ALIASES[f.toLowerCase().replace(/s$/, '')] = f;
 
 /** "Rabbit saddle + head" -> { base: "Rabbit", parts: ["saddle", "head"] }; null if it isn't a menu food. */
 export function splitFood(food: string | null | undefined): { base: string; parts: string[] } | null {
