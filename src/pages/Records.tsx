@@ -1,3 +1,4 @@
+import { sumFeeds } from '../food';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { aviaryLabel, routeSort } from '../aviary';
@@ -20,6 +21,8 @@ interface Day {
   date: string;
   weights: FeedLog[];
   fed: FeedLog[];
+  /** Food found uneaten */
+  left: FeedLog[];
   fasting: boolean;
   flights: FeedLog[];
   foodSet: FeedLog[];
@@ -138,9 +141,10 @@ function BirdRecords({ bird }: { bird: Bird }) {
   const days = useMemo(() => {
     const map = new Map<string, Day>();
     for (const l of logs ?? []) {
-      const d = map.get(l.log_date) ?? { date: l.log_date, weights: [], fed: [], fasting: false, flights: [], foodSet: [], notes: [], staff: new Set<string>() };
+      const d = map.get(l.log_date) ?? { date: l.log_date, weights: [], fed: [], left: [], fasting: false, flights: [], foodSet: [], notes: [], staff: new Set<string>() };
       if (l.weight_g != null) d.weights.push(l);
       if (l.status === 'fed') d.fed.push(l);
+      if (l.status === 'left') d.left.push(l);
       if (l.status === 'fasting') d.fasting = true;
       if (l.status === 'flown') d.flights.push(l);
       if (l.status === 'weighed' && l.weight_g == null && (l.food_type || l.amount)) d.foodSet.push(l);
@@ -169,13 +173,14 @@ function BirdRecords({ bird }: { bird: Bird }) {
   function downloadCsv() {
     if (!isAdmin) return;
     const lbOz = unit === 'lb_oz';
-    const rows = [['Date', ...(lbOz ? ['Weight (lb/oz)'] : []), 'Weight (g)', 'Fed', 'Fasting', 'Flights', 'Notes', 'Staff']];
+    const rows = [['Date', ...(lbOz ? ['Weight (lb/oz)'] : []), 'Weight (g)', 'Fed', 'Left', 'Fasting', 'Flights', 'Notes', 'Staff']];
     for (const d of [...days].reverse()) {
       rows.push([
         d.date,
         ...(lbOz ? [d.weights.map((w) => formatWeight(w.weight_g, unit)).join(' / ')] : []),
         d.weights.map((w) => String(w.weight_g)).join(' / '),
         d.fed.map((f) => [f.amount, f.food_type].filter(Boolean).join(' ')).join(' + '),
+        sumFeeds(d.left),
         d.fasting ? 'yes' : '',
         d.flights.map((f) => `${formatTime(f.logged_at)} ${flightTypeLabel(f.flight_type) ?? ''}`.trim()).join(', '),
         d.notes.join(' | '),
@@ -251,6 +256,7 @@ function BirdRecords({ bird }: { bird: Bird }) {
                     <th>Date</th>
                     <th>Weight</th>
                     <th>Fed</th>
+                    <th>Left</th>
                     <th>Flown</th>
                     <th>Notes</th>
                   </tr>
@@ -265,6 +271,7 @@ function BirdRecords({ bird }: { bird: Bird }) {
                         {d.fed.map((f) => [f.amount, f.food_type].filter(Boolean).join(' ') || 'Fed').join(' + ') || (d.fasting ? '' : '—')}
                         {d.foodSet.length > 0 && d.fed.length === 0 && <span className="muted"> (set: {d.foodSet.at(-1)!.amount} {d.foodSet.at(-1)!.food_type})</span>}
                       </td>
+                      <td className={d.left.length ? 'week-left has-left' : ''}>{sumFeeds(d.left)}</td>
                       <td>{d.flights.map((f) => `${formatTime(f.logged_at)} ${flightTypeLabel(f.flight_type) ?? ''}`.trim()).join(', ') || ''}</td>
                       <td className="records-notes">{d.notes.join(' · ')}</td>
                     </tr>

@@ -194,7 +194,7 @@ function LogLine({ log, name, unit }: { log: FeedLog; name: string; unit: Weight
     <span className="log-line">
       <strong>{log.status === 'weighed' && log.weight_g == null ? 'Food set' : STATUS_TEXT[log.status]}</strong> {formatTime(log.logged_at)} · {name}
       {log.status === 'flown' && log.flight_type && ` · ${flightTypeLabel(log.flight_type)}`}
-      {(log.status === 'fed' || log.status === 'weighed') && (log.amount || log.food_type) && ` · ${[log.amount, log.food_type].filter(Boolean).join(' ')}`}
+      {(log.status === 'fed' || log.status === 'weighed' || log.status === 'left') && (log.amount || log.food_type) && ` · ${[log.amount, log.food_type].filter(Boolean).join(' ')}`}
       {log.weight_g != null && ` · ${formatWeight(log.weight_g, unit)}`}
       {log.more_due && (log.more_due_amount ? ` · still to give: ${log.more_due_amount}` : ' · more due')}
       {log.notes && <em> – {log.notes}</em>}

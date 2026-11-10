@@ -21,6 +21,7 @@ import { Clean } from './pages/Clean';
 import { Ferrets } from './pages/Ferrets';
 import { More } from './pages/More';
 import { Round } from './pages/Round';
+import { FeedSheet } from './pages/FeedSheet';
 import { Session } from './pages/Session';
 import { AalHome, R1Page, R2List, R2Page, R3Page, R4Page, R5Page } from './pages/Aal';
 import { NewOutingPage, OutingPage, OutingR6, OutingR7, OutingR8, OutingsPage } from './pages/Outings';
@@ -62,6 +63,8 @@ function Gate() {
         <Route path="weigh" element={<Weigh />} />
         <Route path="weigh/records" element={<Records />} />
         <Route path="weigh/week" element={<WeekChart />} />
+        <Route path="feed-sheet" element={<FeedSheet />} />
+        <Route path="feed-sheet/:section" element={<FeedSheet />} />
         <Route path="weigh/records/:id" element={<Records />} />
         <Route path="clean" element={<Clean />} />
         <Route path="ferrets" element={<Ferrets />} />

@@ -35,6 +35,12 @@ export function More() {
         {has('outings') && <Item to="/outings" icon="🚐" label="Outings: shows, schools, parties" />}
       </Group>
 
+      {has('leftovers') && (
+        <Group title="Records">
+          <Item to="/feed-sheet" icon="📋" label="Feed sheets (fed and left, by barn)" />
+        </Group>
+      )}
+
       <Group title="Health">
         <Item to="/health" icon="🩺" label="Health issues and medication" />
       </Group>
