@@ -12,7 +12,8 @@ import { useStore } from '../store';
 import { useCleaning } from '../useCleaning';
 import { birdStatus, needsFeeding } from '../status';
 import { formatDay } from '../time';
-import { aviaryLabel, routeSort, sectionPath, sectionRuns } from '../aviary';
+import { aviaryLabel, feedStops, routeSort, sectionPath, sectionRuns } from '../aviary';
+import { AviaryCard, AviaryRow } from '../components/AviaryStop';
 
 const FILTER_KEY = 'smj-today-filter';
 const VIEW_KEY = 'smj-today-view';
@@ -199,7 +200,15 @@ export function Today() {
       {groups.map(({ key, title, birds }) => (
         <section key={key} className={`aviary-group${view === 'rows' ? ' rows' : ''}`}>
           <h2 className="aviary-title">{title === 'No aviary' ? title : <Link to={sectionPath(title)}>{title}</Link>}</h2>
-          {birds.map((b) => (view === 'rows' ? <BirdRow key={b.id} bird={b} /> : <BirdCard key={b.id} bird={b} />))}
+          {feedStops(birds).map((stop) =>
+            stop.length > 1 ? (
+              view === 'rows' ? <AviaryRow key={stop[0].id} birds={stop} /> : <AviaryCard key={stop[0].id} birds={stop} />
+            ) : view === 'rows' ? (
+              <BirdRow key={stop[0].id} bird={stop[0]} />
+            ) : (
+              <BirdCard key={stop[0].id} bird={stop[0]} />
+            ),
+          )}
         </section>
       ))}
       {!query && filter === 'todo' && toFeed === 0 && <p className="empty">Nothing left to feed.</p>}

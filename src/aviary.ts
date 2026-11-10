@@ -64,3 +64,18 @@ export function sectionsInRouteOrder(birds: Bird[], aviaries: Aviary[]): string[
   }
   return seen;
 }
+
+/**
+ * Splits birds in route order into feeding stops. Aviary birds (not flown) sharing an
+ * aviary are fed together as one stop; every other bird is a stop of its own.
+ */
+export function feedStops(ordered: Bird[]): Bird[][] {
+  const stops: Bird[][] = [];
+  for (const bird of ordered) {
+    const last = stops.at(-1);
+    const shared = bird.team === 'aviary' && bird.aviary_id && last?.[0].team === 'aviary' && last[0].aviary_id === bird.aviary_id;
+    if (shared) last!.push(bird);
+    else stops.push([bird]);
+  }
+  return stops;
+}

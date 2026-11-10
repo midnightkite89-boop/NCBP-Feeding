@@ -1017,3 +1017,21 @@ main.full-screen { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   color: #8a5a00;
   font-weight: 600;
 }
+
+/* Shared aviaries fed as one stop */
+.row-shared {
+  font-weight: 400;
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+.aviary-card .aviary-birds {
+  margin-top: 0.75rem;
+}
+.aviary-card .aviary-birds summary {
+  cursor: pointer;
+  padding: 0.4rem 0;
+  font-size: 0.95rem;
+}
+.round-mate {
+  margin-right: 0.6rem;
+}

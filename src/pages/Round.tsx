@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { aviaryLabel, routeSort } from '../aviary';
+import { aviaryLabel, feedStops, routeSort } from '../aviary';
+import { useAviaryStop } from '../components/AviaryStop';
 import { birdCheckToday, openConcerns } from '../care';
 import { ConcernSheet } from '../components/Care';
 import { FlyFeedSheet, TodayEntries } from '../components/FlyFeed';
@@ -62,7 +63,7 @@ function RoundOf({ round }: { round: number }) {
       return false;
     }
   });
-  const order = useMemo(
+  const birdOrder = useMemo(
     () =>
       routeSort(
         birds.filter((b) => b.status === 'active' && (b.feed_round ?? 1) === round),
@@ -70,6 +71,15 @@ function RoundOf({ round }: { round: number }) {
       ),
     [birds, aviaries, round],
   );
+  // Aviary birds sharing an aviary are one stop, led by the first of them
+  const stops = useMemo(() => feedStops(birdOrder), [birdOrder]);
+  const order = useMemo(() => stops.map((s) => s[0]), [stops]);
+  const matesOf = (b: Bird) => stops.find((s) => s[0].id === b.id) ?? [b];
+  const stopName = (b: Bird) => {
+    const mates = matesOf(b);
+    const av = aviaries.find((a) => a.id === b.aviary_id);
+    return mates.length > 1 && av ? aviaryLabel(av) : b.name;
+  };
 
   const statusOf = (b: Bird) =>
     birdStatus(
@@ -79,7 +89,8 @@ function RoundOf({ round }: { round: number }) {
     );
   // Fed birds are done (feeding counts as seeing them). Birds not being fed today
   // (fast day, fasting) are done once checked.
-  const isDone = (b: Bird) => {
+  const isDone = (b: Bird) => matesOf(b).every(isBirdDone);
+  const isBirdDone = (b: Bird) => {
     const state = statusOf(b).state;
     if (needsFeeding(state)) return false;
     // A bird isn't done while it still has medication due today
@@ -194,6 +205,32 @@ function RoundOf({ round }: { round: number }) {
     );
   }
 
+  const mates = matesOf(bird);
+  if (mates.length > 1)
+    return (
+      <div className="round">
+        {header}
+        {progress}
+        <RoundAviaryStop
+          key={bird.id}
+          birds={mates}
+          onFed={() => {
+            if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
+            if (mates.some((m) => medsLeft(m) > 0)) return;
+            advanceTimer.current = window.setTimeout(goNext, 700);
+          }}
+        />
+        <div className="round-nav">
+          <button className="btn btn-outline btn-lg" disabled={index <= 0} onClick={() => index > 0 && setCurrentId(order[index - 1].id)}>
+            ← Back
+          </button>
+          <button className="btn btn-primary btn-lg round-next" onClick={goNext}>
+            {nextTodo(index) ? `Next: ${stopName(nextTodo(index)!)} →` : 'Finish ✓'}
+          </button>
+        </div>
+      </div>
+    );
+
   const status = statusOf(bird);
   const { state, weight, stillToGive, planned } = status;
   const checked = birdCheckToday(bird.id, careLogs, today);
@@ -283,7 +320,7 @@ function RoundOf({ round }: { round: number }) {
         {stillToGive && <p className="still-to-give">Still to give: {stillToGive}</p>}
         {!stillToGive && planned && needsFeeding(state) && <p className="planned-food">Today's food: {planned.label}</p>}
         {concern && <p className="concern-line">⚠ {concern.notes}</p>}
-        {has('leftovers') && <LeftoverLine bird={bird} />}
+        {has('leftovers') && <LeftoverLine birds={[bird]} />}
         {bird.care_notes && <p className="care-notes">{bird.care_notes}</p>}
         <RequestList requests={requests.filter((r) => r.bird_id === bird.id)} showBird={false} />
       </div>
@@ -350,7 +387,7 @@ function RoundOf({ round }: { round: number }) {
           ← Back
         </button>
         <button className="btn btn-primary btn-lg round-next" onClick={goNext}>
-          {next ? `Next: ${next.name} →` : 'Finish ✓'}
+          {next ? `Next: ${stopName(next)} →` : 'Finish ✓'}
         </button>
       </div>
       <p className="round-skip-note muted">
@@ -369,9 +406,83 @@ function RoundOf({ round }: { round: number }) {
           }}
         />
       )}
-      {sheet === 'left' && <LeftoverSheet bird={bird} onClose={() => setSheet(null)} />}
+      {sheet === 'left' && <LeftoverSheet birds={[bird]} onClose={() => setSheet(null)} />}
       {sheet === 'concern' && <ConcernSheet bird={bird} onClose={() => setSheet(null)} />}
     </div>
+  );
+}
+
+/** One stop for a shared aviary: every bird in it fed with one FED, food left logged for the aviary */
+function RoundAviaryStop({ birds, onFed }: { birds: Bird[]; onFed: () => void }) {
+  const stop = useAviaryStop(birds);
+  const { medications, doses, today, giveDose } = useStore();
+  const [leftOpen, setLeftOpen] = useState(false);
+  const meds = birds.flatMap((b) =>
+    dosesToday(medications.filter((m) => m.bird_id === b.id), doses, today)
+      .filter((x) => x.left > 0)
+      .map((x) => ({ ...x, bird: b })),
+  );
+  return (
+    <>
+      <div className="round-bird">
+        <div className="round-aviary">Shared aviary</div>
+        <h1 className="round-name">{stop.title}</h1>
+        <div className="muted">
+          {birds.map((b) => (
+            <Link key={b.id} to={`/bird/${b.id}`} className="round-mate">
+              {b.name}
+            </Link>
+          ))}
+        </div>
+        {meds.length > 0 && (
+          <div className="round-meds" role="alert">
+            {meds.map(({ med, left, bird }) => (
+              <div key={med.id} className="round-med">
+                <div className="round-med-info">
+                  <strong>
+                    💊 {bird.name}: {med.name_dose}
+                  </strong>
+                  <div>{med.amount}</div>
+                </div>
+                <button className="btn btn-primary round-med-btn" onClick={() => giveDose(med, `${bird.name}: ${med.name_dose} given`)}>
+                  Given{left > 1 ? ` (${left} left)` : ''}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {birds.map((b) => (
+          <HealthAlerts key={b.id} bird={b} />
+        ))}
+        {has('leftovers') && <LeftoverLine birds={birds} />}
+      </div>
+      <div className="round-actions">
+        {needsFeeding(stop.state) ? (
+          <button
+            className="btn btn-feed btn-xl round-fed"
+            onClick={() => {
+              stop.feed();
+              onFed();
+            }}
+          >
+            <span className="btn-main">FED</span>
+            <span className="btn-sub">
+              {stop.total} · {stop.toFeed.length === birds.length ? `all ${birds.length}` : stop.toFeed.map((b) => b.name).join(', ')}
+            </span>
+          </button>
+        ) : (
+          <div className="round-done-note">{stop.state === 'fastday' ? '✓ Fast day' : '✓ Fed'}</div>
+        )}
+        <div className="round-row">
+          {has('leftovers') && (
+            <button className="btn btn-outline btn-lg" onClick={() => setLeftOpen(true)}>
+              🍗 Food left
+            </button>
+          )}
+        </div>
+      </div>
+      {leftOpen && <LeftoverSheet birds={birds} title={stop.title} onClose={() => setLeftOpen(false)} />}
+    </>
   );
 }
 

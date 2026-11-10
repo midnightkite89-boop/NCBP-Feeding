@@ -134,3 +134,18 @@ export function nudgeAmount(amount: string | null, food: string | null, halves: 
   const qty = Math.min(QTY_MAX, Math.max(QTY_MIN, parts.qty + halves * QTY_STEP));
   return { amount: formatQty(qty), food: parts.food, qty };
 }
+
+/** Several feeds added up, e.g. three birds on 11 Chick → "33 Chick"; free-text amounts are listed as they are. */
+export function sumFeeds(feeds: { amount: string | null; food_type: string | null }[]): string {
+  const totals = new Map<string, number>();
+  const other: string[] = [];
+  for (const f of feeds) {
+    const items = splitFeedItems(f.amount, f.food_type);
+    if (!items || items.some((i) => !i.food)) {
+      other.push(feedLabel(f.amount, f.food_type));
+      continue;
+    }
+    for (const i of items) totals.set(i.food, (totals.get(i.food) ?? 0) + i.qty);
+  }
+  return [...[...totals].map(([food, qty]) => feedLabel(formatQty(qty), food)), ...other].join(', ');
+}

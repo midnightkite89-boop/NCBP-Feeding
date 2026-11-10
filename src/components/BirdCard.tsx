@@ -114,7 +114,7 @@ export function BirdCard({ bird, detailed = false }: { bird: Bird; detailed?: bo
       {stillToGive && <p className="still-to-give">Still to give: {stillToGive}</p>}
       {!stillToGive && status.planned && needsFeeding(state) && <p className="planned-food">Today's food: {status.planned.label}</p>}
       {concern && <p className="concern-line">⚠ {concern.notes}</p>}
-      {has('leftovers') && <LeftoverLine bird={bird} />}
+      {has('leftovers') && <LeftoverLine birds={[bird]} />}
       <DosesDue birdId={bird.id} compact />
       <HealthAlerts bird={bird} />
       {detailed && bird.care_notes && <p className="care-notes">{bird.care_notes}</p>}
@@ -204,7 +204,7 @@ export function BirdCard({ bird, detailed = false }: { bird: Bird; detailed?: bo
       {sheet === 'request' && <RequestSheet birdId={bird.id} onClose={() => setSheet(null)} />}
       {sheet === 'flown' && <FlyFeedSheet bird={bird} onClose={() => setSheet(null)} />}
       {sheet === 'concern' && <ConcernSheet bird={bird} onClose={() => setSheet(null)} />}
-      {sheet === 'left' && <LeftoverSheet bird={bird} onClose={() => setSheet(null)} />}
+      {sheet === 'left' && <LeftoverSheet birds={[bird]} onClose={() => setSheet(null)} />}
       {sheet === 'targets' && <TargetsSheet bird={bird} onClose={() => setSheet(null)} />}
     </article>
   );

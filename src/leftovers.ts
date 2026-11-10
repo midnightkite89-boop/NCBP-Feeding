@@ -17,10 +17,11 @@ export interface LeftoverTrend {
   text: string | null;
 }
 
-/** `leftovers` = "food left" logs, oldest first (any birds). */
-export function leftoverTrend(birdId: string, leftovers: FeedLog[], today: string): LeftoverTrend {
+/** `leftovers` = "food left" logs, oldest first (any birds). Pass several ids for a shared aviary. */
+export function leftoverTrend(birdIds: string | string[], leftovers: FeedLog[], today: string): LeftoverTrend {
   const from = addDays(today, -(LEFT_WINDOW_DAYS - 1));
-  const mine = leftovers.filter((l) => l.bird_id === birdId && l.log_date >= from && l.log_date <= today);
+  const ids = new Set(typeof birdIds === 'string' ? [birdIds] : birdIds);
+  const mine = leftovers.filter((l) => ids.has(l.bird_id) && l.log_date >= from && l.log_date <= today);
   const dates = new Set(mine.map((l) => l.log_date));
   const days = dates.size;
   const twoInARow = dates.has(today) && dates.has(addDays(today, -1));
