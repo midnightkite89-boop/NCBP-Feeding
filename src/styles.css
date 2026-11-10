@@ -1080,3 +1080,93 @@ main.full-screen { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 .row-flag.flag-left { color: #a16207; }
 .row-flag.flag-meds { color: var(--brand); }
 .leftover-line.flagged .ic { color: #a16207; }
+
+/* ==== Soft style (NCBP): rounded white cards on a pale page, hairline borders, pill buttons ==== */
+:root {
+  --bg: #f5f3f4;
+  --hair: #e2dde0;
+  --hair-strong: #cbc4c8;
+  --line: #d9d3d6;
+  --soft-radius: 18px;
+}
+html, body { background: var(--bg); }
+.sticky-filter { background: var(--bg); }
+
+/* buttons: pills with a light outline */
+.btn { border-radius: 999px; font-weight: 600; border-width: 1.5px; }
+.btn-outline { background: #fff; border-color: var(--hair-strong); color: var(--ink); }
+.btn-outline.on, .chip-row .btn.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn-xl { border-radius: 999px; }
+.btn-feed .btn-main { font-weight: 700; }
+.btn-sub { font-weight: 500; }
+.btn-undo { border-radius: 999px; }
+
+/* cards: white, hairline, status shown by a soft badge and a thin top line */
+.bird-card {
+  border: 1px solid var(--hair); border-left-width: 1px; border-radius: var(--soft-radius);
+  padding: 14px; background: #fff; box-shadow: 0 1px 2px rgba(40, 20, 30, 0.04);
+}
+.bird-card.state-todo, .bird-card.state-part, .bird-card.state-fed, .bird-card.state-fastday, .bird-card.state-fasting { border-left-color: var(--hair); }
+.bird-card.state-fed, .bird-card.state-fastday, .bird-card.state-fasting { background: #fff; }
+.bird-name { font-weight: 700; }
+.chip { font-weight: 600; font-size: 0.85rem; padding: 4px 10px; border: 0; }
+.chip-todo { background: var(--todo-bg); color: var(--todo); }
+.chip-part { background: var(--part-bg); color: var(--part); border: 0; }
+.chip-fed { background: var(--fed-bg); color: var(--fed); }
+.chip-fastday, .chip-fasting { background: var(--grey-bg); color: var(--grey); border: 0; }
+.panel { background: #fff; border: 1px solid var(--hair); border-radius: var(--soft-radius); }
+.concern-line { border: 0; border-radius: 12px; font-weight: 600; }
+.more-panel { border: 1px solid #f0d9a8; border-radius: 14px; }
+
+/* lists: each section is one rounded white group of rows */
+.aviary-title { border-bottom: 0; font-size: 1.05rem; font-weight: 700; color: var(--muted); padding: 4px 6px; margin-bottom: 6px; }
+.aviary-group.rows .aviary-title { margin-bottom: 6px; }
+.aviary-group.rows { background: none; }
+.aviary-group.rows > .bird-row-wrap:first-of-type .bird-row { border-top-left-radius: var(--soft-radius); border-top-right-radius: var(--soft-radius); }
+.aviary-group.rows > .bird-row-wrap:last-of-type .bird-row { border-bottom-left-radius: var(--soft-radius); border-bottom-right-radius: var(--soft-radius); border-bottom: 0; }
+.aviary-group.rows > .bird-row-wrap { border-left: 1px solid var(--hair); border-right: 1px solid var(--hair); background: #fff; }
+.aviary-group.rows > .bird-row-wrap:first-of-type { border-top: 1px solid var(--hair); border-top-left-radius: var(--soft-radius); border-top-right-radius: var(--soft-radius); }
+.aviary-group.rows > .bird-row-wrap:last-of-type { border-bottom: 1px solid var(--hair); border-bottom-left-radius: var(--soft-radius); border-bottom-right-radius: var(--soft-radius); overflow: hidden; }
+.bird-row { border-bottom: 1px solid var(--hair); padding-left: 14px; }
+.bird-row-wrap.open > .bird-row { background: #faf7f9; }
+.bird-row-wrap.open > .bird-card { border: 0; border-top: 1px solid var(--hair); border-radius: 0; box-shadow: none; margin-bottom: 0; }
+.row-name { font-weight: 600; }
+.row-num { border-width: 1px; border-color: var(--hair-strong); font-weight: 600; }
+.row-fed { border-radius: 999px; font-weight: 700; min-height: 44px; }
+
+/* chips and toggles */
+.sum-chip { border: 1px solid var(--hair-strong); font-weight: 600; min-height: 40px; }
+.sum-chip.danger { background: var(--todo-bg); border-color: var(--todo-bg); color: var(--todo); }
+.sum-chip.ok { background: var(--fed-bg); border-color: var(--fed-bg); color: var(--fed); }
+.segmented button { border: 1.5px solid var(--hair-strong); border-radius: 999px; font-weight: 600; min-height: 50px; }
+.segmented button.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.entry-chip { border-color: var(--hair); background: #fff; }
+
+/* forms */
+.field input, .field select, .field textarea, .staff-row input, .staff-row select, .food-other {
+  border: 1.5px solid var(--hair-strong); border-radius: 14px;
+}
+.field input:focus, .field select:focus, .field textarea:focus, .food-other:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+.food-grid button, .food-cuts button { border: 1.5px solid var(--hair-strong); border-radius: 999px; font-weight: 600; }
+.food-grid button.on, .food-cuts button.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.food-cuts { background: #faf7f9; border-radius: 16px; }
+.stepper button { border: 1.5px solid var(--hair-strong); border-radius: 999px; font-weight: 600; }
+.stepper output { border: 1px solid var(--hair); border-radius: 16px; background: #fff; font-weight: 700; }
+.score-grid button { border: 1.5px solid var(--hair-strong); border-radius: 999px; font-weight: 600; }
+.score-grid button.on { background: var(--brand); border-color: var(--brand); }
+.sheet { border-radius: 24px 24px 0 0; }
+
+/* More menu: rounded white groups */
+.more-group ul { border: 1px solid var(--hair); border-radius: var(--soft-radius); background: #fff; overflow: hidden; }
+.more-group a { border-bottom: 1px solid var(--hair); padding: 0 14px; font-weight: 500; }
+.more-group li:last-child a { border-bottom: 0; }
+.more-list button, .more-list a { border-bottom: 1px solid var(--hair); font-weight: 600; }
+
+/* tab bar */
+.tabbar { border-top: 1px solid var(--hair); background: rgba(255, 255, 255, 0.96); }
+.tabbar a { font-weight: 600; }
+.tabbar a.active { background: none; box-shadow: none; color: var(--brand); }
+.tabbar a.active .tab-icon { background: var(--brand-tint); border-radius: 999px; padding: 2px 14px; }
+.search input { border: 1.5px solid var(--hair-strong); border-radius: 999px; padding-left: 18px; background: #fff; }
+.search input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+.card-aviary, .round-aviary { background: var(--brand-tint); color: var(--brand); font-weight: 600; border-radius: 999px; }

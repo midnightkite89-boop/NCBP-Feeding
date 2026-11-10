@@ -257,7 +257,7 @@ export function BirdRow({ bird }: { bird: Bird }) {
         {aviary?.number != null && <span className="row-num">{aviary.number}</span>}
         {(concern || birdRequests.length > 0) && (
           <span className="row-flag" title={concern ? 'Concern' : 'Special request'} aria-label={concern ? 'Concern' : 'Special request'}>
-            ⚠
+            <I n={concern ? 'concern' : 'request'} size={17} />
           </span>
         )}
         {status.flights.length > 0 && <span className="row-flag plain" aria-label="Flown today"><I n="fly" size={17} /></span>}

@@ -368,7 +368,7 @@ function RoundOf({ round }: { round: number }) {
         <div className="round-row">
           {has('leftovers') && (
             <button className="btn btn-outline btn-lg" onClick={() => setSheet('left')}>
-              🍗 Food left
+              <I n="left" /> Food left
             </button>
           )}
           {bird.team !== 'aviary' && (
@@ -476,7 +476,7 @@ function RoundAviaryStop({ birds, onFed }: { birds: Bird[]; onFed: () => void })
         <div className="round-row">
           {has('leftovers') && (
             <button className="btn btn-outline btn-lg" onClick={() => setLeftOpen(true)}>
-              🍗 Food left
+              <I n="left" /> Food left
             </button>
           )}
         </div>
