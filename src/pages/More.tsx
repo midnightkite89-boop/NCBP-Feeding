@@ -43,6 +43,7 @@ export function More() {
 
       <Group title="Health">
         <Item to="/health" icon="🩺" label="Health issues and medication" />
+        {has('checkups') && <Item to="/checkups" icon="📏" label="Health checks: coped, weighed, condition score" />}
       </Group>
 
       {has('aalForms') && (

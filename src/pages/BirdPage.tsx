@@ -1,3 +1,4 @@
+import { BirdCheckups } from './Checkups';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BirdCard } from '../components/BirdCard';
@@ -120,6 +121,8 @@ export function BirdPage() {
           </Link>
         </div>
       </section>
+
+      <BirdCheckups bird={bird} />
 
       {tracks.length > 0 && (
         <section className="panel">

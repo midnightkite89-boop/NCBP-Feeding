@@ -186,6 +186,7 @@ const VOIDS: Record<string, string> = {
   void_care_log: 'care_logs',
   void_ferret_log: 'ferret_logs',
   void_flight_track: 'flight_tracks',
+  void_checkup: 'bird_checkups',
 };
 
 function rpc(name: string, args: Row): unknown {

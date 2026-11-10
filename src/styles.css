@@ -1056,3 +1056,15 @@ main.full-screen { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   .week-left { width: 11mm; min-width: 0; }
   .week-page.no-print-staff .feed-sheet { display: none !important; }
 }
+
+/* Health checks */
+.checkup-group h2 { font-size: 1rem; margin: 18px 0 6px; }
+.checkup-overdue h2, .checkup-never h2 { color: var(--danger, #b3261e); }
+.checkup-list { list-style: none; margin: 0; padding: 0; }
+.checkup-row { display: flex; flex-direction: column; align-items: flex-start; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid #e3e3e3; padding: 10px 2px; font: inherit; color: inherit; cursor: pointer; }
+.checkup-last { font-size: 0.9rem; }
+.score-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.score-grid button { min-height: 44px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; font: inherit; font-weight: 700; }
+.score-grid button.on { background: var(--ink); color: #fff; }
+.bird-checkups { margin: 16px 0; }
+.bird-checkups ul { padding-left: 1.1rem; }

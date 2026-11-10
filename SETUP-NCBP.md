@@ -39,3 +39,7 @@ where p.id = (select id from auth.users where email = v.email);
 
 - [ ] **Authentication → URL Configuration:** set **Site URL** to the Netlify address (shown at the top of the Netlify project, probably `https://ncbp-feeding.netlify.app`).
 - [ ] Sign in on your phone and tell Claude, so it can check everything loaded.
+
+## Updates since setup
+
+- [ ] **Health checks (11 Nov 2026):** Supabase → SQL Editor → paste all of `supabase/migrations/024_checkups.sql` → **Run**. Safe to run twice.

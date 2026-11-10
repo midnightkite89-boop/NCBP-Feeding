@@ -207,6 +207,24 @@ export interface CareSettings {
   alert_level?: 'off' | 'quiet' | 'full';
   /** Feeding rounds in order; birds.feed_round counts from 1 */
   round_names?: string[];
+  /** Hands-on check (coped, weighed, condition scored) due this many days after the last */
+  checkup_every_days?: number;
+}
+
+/** A hands-on check of a bird not handled day to day */
+export interface BirdCheckup {
+  id: string;
+  bird_id: string;
+  checked_on: string;
+  weight_g: number | null;
+  /** 1 (very thin) to 5 (overweight), in halves */
+  condition_score: number | null;
+  coped_beak: boolean;
+  coped_talons: boolean;
+  notes: string | null;
+  logged_at: string;
+  staff_id: string;
+  voided_at: string | null;
 }
 
 export function roundNames(s: CareSettings): string[] {

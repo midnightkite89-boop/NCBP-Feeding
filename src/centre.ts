@@ -31,6 +31,8 @@ export const CENTRE = {
     breeding: true,
     /** A daily "checked" for every bird (FED counts as one); off = not shown or counted */
     dailyChecks: false,
+    /** Twice-yearly hands-on checks for breeding / aviary birds: coped, weighed, condition scored */
+    checkups: true,
   },
 } as const;
 
