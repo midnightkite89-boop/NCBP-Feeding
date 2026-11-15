@@ -80,7 +80,7 @@ export function Weigh() {
   // Section by section, in feeding-round order
   const sections = useMemo(() => {
     const byId = new Map(aviaries.map((a) => [a.id, a]));
-    const ordered = routeSort(birds.filter((b) => b.status === 'active' && isWeighed(b)), aviaries);
+    const ordered = routeSort(birds.filter((b) => b.status === 'active' && b.team !== 'aviary'), aviaries);
     return sectionRuns(ordered, aviaries).map((run) => ({
       key: run.key,
       title: run.title,
@@ -88,7 +88,8 @@ export function Weigh() {
     }));
   }, [birds, aviaries]);
 
-  const order = sections.flatMap((s) => s.birds.map((x) => x.bird));
+  // Resting birds can be weighed whenever wanted, but only the flying team counts as "to weigh"
+  const order = sections.flatMap((s) => s.birds.map((x) => x.bird)).filter(isWeighed);
   const weighedCount = order.filter((b) => statuses.get(b.id)?.weighIn).length;
   const selected = birds.find((b) => b.id === selectedId) ?? null;
 
@@ -119,7 +120,7 @@ export function Weigh() {
           <span>Not weighed yet only</span>
         </label>
         {sections.map((section) => {
-          const rows = section.birds.filter(({ bird }) => !onlyTodo || !statuses.get(bird.id)?.weighIn);
+          const rows = section.birds.filter(({ bird }) => !onlyTodo || (isWeighed(bird) && !statuses.get(bird.id)?.weighIn));
           if (rows.length === 0) return null;
           return (
             <section key={section.key}>
@@ -137,7 +138,10 @@ export function Weigh() {
                         onClick={() => open(bird.id)}
                       >
                         <span className="weigh-num">{aviary?.number ?? '–'}</span>
-                        <span className="weigh-name">{bird.name}</span>
+                        <span className="weigh-name">
+                          {bird.name}
+                          {!isWeighed(bird) && <span className="weigh-optional"> resting</span>}
+                        </span>
                         <span className={`weigh-val${warn ? ' warn-text' : ''}`}>{w != null ? `✓ ${formatWeight(w, bird.weight_unit)}` : ''}</span>
                       </button>
                     </li>

@@ -1229,3 +1229,4 @@ html, body { background: var(--bg); }
 .theme-switch button.on { background: var(--brand); color: #fff; }
 .more-group ul:has(.theme-row) { border: 0; background: none; overflow: visible; }
 .theme-row { list-style: none; }
+.weigh-optional { font-size: 0.8em; font-weight: 500; color: var(--muted); }
