@@ -19,7 +19,7 @@ export function Login() {
 
   return (
     <main className="login">
-      <img src="/icon-192.png" alt="" width={96} height={96} />
+      <img src="/ncbp-logo.png" alt={CENTRE.name} className="login-logo" />
       <h1>{CENTRE.appName}</h1>
       <form onSubmit={submit}>
         <label className="field">

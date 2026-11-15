@@ -1,3 +1,4 @@
+import { has } from './centre';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { PostgrestError, Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
@@ -370,6 +371,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchFerrets = useCallback(async () => {
+    // Centres without ferrets never ask for them
+    if (!has('ferrets')) return;
     const [cages, logs] = await Promise.all([
       supabase.from('ferret_cages').select('*').eq('archived', false).order('sort'),
       supabase.from('ferret_logs').select('*').is('voided_at', null).gte('log_date', addDays(todayRef.current, -45)).order('logged_at'),
@@ -543,12 +546,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (row?.id) setServerCare((prev) => upsertById(prev, row));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'care_settings' }, () => void fetchCare())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ferret_logs' }, (payload) => {
-        const row = payload.new as FerretLog;
-        if (row?.id) setServerFerret((prev) => upsertById(prev, row));
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ferret_cages' }, () => void fetchFerrets())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ferrets' }, () => void fetchFerrets())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'health_issues' }, () => void fetchHealth())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'health_entries' }, () => void fetchHealth())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'medications' }, () => void fetchHealth())
@@ -561,7 +558,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (row?.id) setCleanPlan((prev) => upsertById(prev, row));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'birds' }, () => void fetchBirdsAndAviaries())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'aviaries' }, () => void fetchBirdsAndAviaries())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'aviaries' }, () => void fetchBirdsAndAviaries());
+    // Ferret updates only where the centre keeps ferrets
+    if (has('ferrets'))
+      channel
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ferret_logs' }, (payload) => {
+          const row = payload.new as FerretLog;
+          if (row?.id) setServerFerret((prev) => upsertById(prev, row));
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ferret_cages' }, () => void fetchFerrets())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ferrets' }, () => void fetchFerrets());
+    channel
       .subscribe((status) => {
         // After any reconnect, catch up on whatever was missed.
         if (status === 'SUBSCRIBED') void refresh();

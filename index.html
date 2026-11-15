@@ -9,6 +9,14 @@
     <meta name="apple-mobile-web-app-title" content="Bird Care" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" href="/icon-192.png" />
+    <script>
+      try {
+        var t = localStorage.getItem('app-theme');
+        var d = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = d ? 'dark' : 'light';
+        if (d) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#141113');
+      } catch (e) {}
+    </script>
     <title>NCBP Bird Care</title>
   </head>
   <body>

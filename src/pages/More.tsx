@@ -1,4 +1,5 @@
 import { IconTile, type IconName } from '../components/Icon';
+import { useTheme, type ThemeChoice } from '../theme';
 import { Link } from 'react-router-dom';
 import { has } from '../centre';
 import { roundNames } from '../types';
@@ -79,6 +80,12 @@ export function More() {
         </>
       )}
 
+      <Group title="Appearance">
+        <li className="theme-row">
+          <ThemeSwitch />
+        </li>
+      </Group>
+
       <button className="btn btn-outline btn-lg sign-out" onClick={signOut}>
         Sign out
       </button>
@@ -106,5 +113,25 @@ function Item({ to, icon, label }: { to: string; icon: IconName; label: string }
         </span>
       </Link>
     </li>
+  );
+}
+
+const THEMES: { value: ThemeChoice; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'auto', label: 'Match phone' },
+];
+
+/** Light / dark / follow the phone, saved on this phone */
+function ThemeSwitch() {
+  const { choice, setChoice } = useTheme();
+  return (
+    <div className="theme-switch" role="radiogroup" aria-label="Appearance">
+      {THEMES.map((t) => (
+        <button key={t.value} type="button" role="radio" aria-checked={choice === t.value} className={choice === t.value ? 'on' : ''} onClick={() => setChoice(t.value)}>
+          {t.label}
+        </button>
+      ))}
+    </div>
   );
 }
