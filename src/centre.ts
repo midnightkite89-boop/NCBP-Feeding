@@ -13,12 +13,24 @@ export const CENTRE = {
   extraFoods: ['Mackerel', 'Trout', 'Squirrel'],
   /** Cuts offered for the bigger foods (replaces the standard list where given) */
   foodParts: { Rabbit: ['portion', 'whole'] } as Record<string, readonly string[]>,
+  /** Flight types offered, in the order staff reach for them, with this centre's names */
+  flightTypes: [
+    { value: 'display', label: 'Demonstration' },
+    { value: 'experience', label: 'Experience' },
+    { value: 'training', label: 'Training' },
+    { value: 'evening', label: 'Owl evening' },
+    { value: 'other', label: 'Other' },
+  ] as { value: 'display' | 'experience' | 'training' | 'school' | 'evening' | 'other'; label: string }[],
+  /** Hint in the session note box (NCBP doesn't record customer names) */
+  sessionNoteHint: 'Optional',
   features: {
     ferrets: false,
     /** GPS flight logs (Marshall AeroVision) */
-    gpsFlights: false,
+    gpsFlights: true,
     /** Experience / display sessions with several birds */
-    sessions: false,
+    sessions: true,
+    /** Today's demonstration timetable: birds added to set times on the day, one tap to log */
+    timetable: true,
     /** Shows, schools and parties with R6–R8 forms */
     outings: false,
     /** UK Animal Activity Licence forms (R1–R5) */

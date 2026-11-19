@@ -1,18 +1,18 @@
 // Flight helpers shared by the Flown screen, the session screen and the log panel.
-import type { FlightType } from './types';
+import { FLIGHT_TYPES, type FlightType } from './types';
 
 const LAST_TYPE_KEY = 'smj-last-flight-type';
 
-/** Flight types in the order staff reach for them (experiences are the most common) */
-export const FLIGHT_ORDER: FlightType[] = ['experience', 'display', 'training', 'school', 'other'];
+/** Flight types in the order staff reach for them (set per centre) */
+export const FLIGHT_ORDER: FlightType[] = FLIGHT_TYPES.map((t) => t.value);
 
 /** The type used last on this phone, so the usual one is ready to tap */
 export function lastFlightType(): FlightType {
   try {
     const t = localStorage.getItem(LAST_TYPE_KEY) as FlightType | null;
-    return t && FLIGHT_ORDER.includes(t) ? t : 'experience';
+    return t && FLIGHT_ORDER.includes(t) ? t : FLIGHT_ORDER[0];
   } catch {
-    return 'experience';
+    return FLIGHT_ORDER[0];
   }
 }
 

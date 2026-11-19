@@ -69,7 +69,7 @@ export function Flights() {
 
   return (
     <div className="flights-page">
-      <h1 className="page-title">✈ {date === today ? "Today's flights" : 'Flights'}</h1>
+      <h1 className="page-title">{date === today ? "Today's flights" : 'Flights'}</h1>
       <div className="day-nav">
         <button className="btn btn-outline" onClick={() => setParams({ date: addDays(date, -1) })} aria-label="Previous day">
           ◀
@@ -83,7 +83,7 @@ export function Flights() {
         <p className="muted">Loading…</p>
       ) : flights.length === 0 ? (
         <p className="muted">
-          No flights logged {date === today ? 'yet today' : 'that day'}. Log them with ✈ Flown on a bird or <Link to="/session">Log a session</Link>.
+          No flights logged {date === today ? 'yet today' : 'that day'}. Log them from <Link to="/flying">today's flying</Link>, Fly / Feed on a bird, or <Link to="/session">Log a session</Link>.
         </p>
       ) : (
         <ul className="flight-list">

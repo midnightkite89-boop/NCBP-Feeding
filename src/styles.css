@@ -1230,3 +1230,17 @@ html, body { background: var(--bg); }
 .more-group ul:has(.theme-row) { border: 0; background: none; overflow: visible; }
 .theme-row { list-style: none; }
 .weigh-optional { font-size: 0.8em; font-weight: 500; color: var(--muted); }
+
+/* Today's flying board */
+.slot-card { background: var(--card); border: 1px solid var(--hair); border-radius: var(--soft-radius, 18px); padding: 14px; margin-bottom: 12px; }
+.slot-card.done { background: var(--card-2); }
+.slot-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.slot-time { font-size: 1.5rem; font-weight: 700; }
+.slot-type { font-weight: 600; color: var(--muted); flex: 1; }
+.slot-birds { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.slot-bird { padding: 4px 12px; border-radius: 999px; background: var(--brand-tint); color: var(--brand); text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+.slot-empty { margin: 0 0 10px; }
+.slot-remove { font-size: 0.9rem; color: var(--muted); margin-top: 6px; }
+.add-slot { width: 100%; }
+.slot-others summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+.demo-times { margin-top: 20px; }

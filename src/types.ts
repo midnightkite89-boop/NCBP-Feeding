@@ -88,15 +88,10 @@ export interface Bird {
 }
 
 /** fed = food given; fasting = deliberately not fed today; weighed = weight only; flown = flight (logged_at = flight time) */
-export type FlightType = 'display' | 'experience' | 'training' | 'school' | 'other';
+export type FlightType = 'display' | 'experience' | 'training' | 'school' | 'evening' | 'other';
 
-export const FLIGHT_TYPES: { value: FlightType; label: string }[] = [
-  { value: 'display', label: 'Display' },
-  { value: 'experience', label: 'Experience' },
-  { value: 'training', label: 'Training' },
-  { value: 'school', label: 'School' },
-  { value: 'other', label: 'Other' },
-];
+/** This centre's flight types and names (CENTRE.flightTypes) */
+export const FLIGHT_TYPES: { value: FlightType; label: string }[] = CENTRE.flightTypes;
 
 export function flightTypeLabel(t: FlightType | null | undefined): string | null {
   return FLIGHT_TYPES.find((f) => f.value === t)?.label ?? null;
@@ -209,6 +204,8 @@ export interface CareSettings {
   round_names?: string[];
   /** Hands-on check (coped, weighed, condition scored) due this many days after the last */
   checkup_every_days?: number;
+  /** Usual demonstration times shown on the flying board each day, e.g. ["11:30", "13:30"] */
+  demo_times?: string[];
 }
 
 /** A hands-on check of a bird not handled day to day */

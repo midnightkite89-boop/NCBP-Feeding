@@ -1,3 +1,4 @@
+import { CENTRE } from '../centre';
 import { useEffect, useMemo, useState } from 'react';
 import { aviaryLabel, routeSort, sectionRuns } from '../aviary';
 import { FlightTime, GloveFeed, gloveAmount, useGloveFeed } from '../components/FlightParts';
@@ -100,7 +101,7 @@ export function Session() {
 
   return (
     <div className="session-page">
-      <h1 className="page-title">✈ Log a session</h1>
+      <h1 className="page-title">Log a session</h1>
 
       <div className="flight-types session-types" role="radiogroup" aria-label="Type of session">
         {FLIGHT_ORDER.map((t) => (
@@ -111,8 +112,8 @@ export function Session() {
       </div>
       <FlightTime time={time} onChange={setTime} />
       <label className="field">
-        <span>Who / note (optional)</span>
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Smith family, 2 adults" />
+        <span>Note</span>
+        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={CENTRE.sessionNoteHint} />
       </label>
 
       <h2 className="session-h">
@@ -191,7 +192,7 @@ export function Session() {
   );
 }
 
-function PickChip({ bird, on, onToggle }: { bird: Bird; on: boolean; onToggle: (id: string) => void }) {
+export function PickChip({ bird, on, onToggle }: { bird: Bird; on: boolean; onToggle: (id: string) => void }) {
   return (
     <button type="button" className={`pick-chip${on ? ' on' : ''}`} aria-pressed={on} onClick={() => onToggle(bird.id)}>
       {on ? '✓ ' : ''}

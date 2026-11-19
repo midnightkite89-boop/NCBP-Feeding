@@ -159,10 +159,16 @@ export function Today() {
             <I n="round" /> Feeding round
           </Link>
         )}
-        {has('sessions') && (
-          <Link to="/session" className="btn btn-outline btn-lg">
-            <I n="fly" /> Log a session
+        {has('timetable') ? (
+          <Link to="/flying" className="btn btn-outline btn-lg">
+            <I n="fly" /> Today's flying
           </Link>
+        ) : (
+          has('sessions') && (
+            <Link to="/session" className="btn btn-outline btn-lg">
+              <I n="fly" /> Log a session
+            </Link>
+          )
         )}
       </div>
 

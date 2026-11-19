@@ -1,6 +1,6 @@
 // Builds the demo database: runs SETUP-NEW-CENTRE.sql plus a centre's data SQL in an
 // in-memory Postgres and saves every table as JSON for the browser-only demo mode.
-// Usage: node scripts/build-demo-data.mjs ../ncbp/ncbp-data.sql  → src/demo/demo-data.json (not committed)
+// Usage: node scripts/build-demo-data.mjs ../ncbp/ncbp-data.sql [more.sql ...]  → src/demo/demo-data.json (not committed)
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync, writeFileSync } from 'node:fs';
 
@@ -20,7 +20,7 @@ await db.exec(`
   create publication supabase_realtime;
 `);
 await db.exec(readFileSync(new URL('../supabase/SETUP-NEW-CENTRE.sql', import.meta.url), 'utf8'));
-if (process.argv[2]) await db.exec(readFileSync(process.argv[2], 'utf8'));
+for (const f of process.argv.slice(2)) await db.exec(readFileSync(f, 'utf8'));
 await db.exec(`insert into auth.users (id, email) values ('${DEMO_USER}', 'demo@example.com');
   update public.profiles set role = 'admin', display_name = 'Demo' where id = '${DEMO_USER}';`);
 

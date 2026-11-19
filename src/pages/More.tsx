@@ -32,7 +32,8 @@ export function More() {
         ) : (
           <Item to="/round" icon="round" label="Start feeding round" />
         )}
-        {has('sessions') && <Item to="/session" icon="fly" label="Log a session (experience, display…)" />}
+        {has('timetable') && <Item to="/flying" icon="calendar" label="Today's flying: demos and owl evenings" />}
+        {has('sessions') && <Item to="/session" icon="fly" label="Log a session (experience, training…)" />}
         {has('gpsFlights') && <Item to="/flights" icon="gps" label="Today's flights and GPS logs" />}
         {has('outings') && <Item to="/outings" icon="outing" label="Outings: shows, schools, parties" />}
       </Group>
