@@ -43,4 +43,4 @@ where p.id = (select id from auth.users where email = v.email);
 ## Updates since setup
 
 - [x] **Health checks (11 Nov 2026):** Supabase → SQL Editor → paste all of `supabase/migrations/024_checkups.sql` → **Run**. Safe to run twice.
-- [ ] **Flying board (19 Nov 2026):** Supabase → SQL Editor → paste all of `supabase/migrations/025_flight_timetable.sql` → **Run**. Then a new query with `../ncbp/ncbp-update-2026-11-19.sql` → **Run** (placeholder demo times 11:30 / 13:30 / 15:30). Both safe to run twice.
+- [x] **Flying board (19 Nov 2026):** Supabase → SQL Editor → paste all of `supabase/migrations/025_flight_timetable.sql` → **Run**. Then a new query with `../ncbp/ncbp-update-2026-11-19.sql` → **Run** (placeholder demo times 11:30 / 13:30 / 15:30). Both safe to run twice.
