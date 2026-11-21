@@ -2,7 +2,7 @@ import { I } from '../components/Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { aviaryLabel, feedStops, routeSort } from '../aviary';
-import { useAviaryStop } from '../components/AviaryStop';
+import { AviaryFedRow, useAviaryStop } from '../components/AviaryStop';
 import { birdCheckToday, openConcerns } from '../care';
 import { ConcernSheet } from '../components/Care';
 import { FlyFeedSheet, TodayEntries } from '../components/FlyFeed';
@@ -16,6 +16,7 @@ import { QTY_MAX, QTY_MIN, QTY_STEP, feedLabel, joinFeedItems, splitFeedItems, t
 import { dosesToday, photoStatus } from '../health';
 import { HealthAlerts } from '../components/HealthAlerts';
 import { LeftoverLine, LeftoverSheet } from '../components/Leftovers';
+import { YesterdayLine } from '../components/Yesterday';
 import { has } from '../centre';
 
 const ROUND_KEY = 'smj-round-at';
@@ -65,7 +66,8 @@ function RoundOf({ round }: { round: number }) {
   const birdOrder = useMemo(
     () =>
       routeSort(
-        birds.filter((b) => b.status === 'active' && (b.feed_round ?? 1) === round),
+        // The flying team is fed when flown, not on the round (Today still shows them until fed)
+        birds.filter((b) => b.status === 'active' && b.team !== 'flying' && (b.feed_round ?? 1) === round),
         aviaries,
       ),
     [birds, aviaries, round],
@@ -320,6 +322,7 @@ function RoundOf({ round }: { round: number }) {
         {stillToGive && <p className="still-to-give">Still to give: {stillToGive}</p>}
         {!stillToGive && planned && needsFeeding(state) && <p className="planned-food">Today's food: {planned.label}</p>}
         {concern && <p className="concern-line"><I n="concern" /> {concern.notes}</p>}
+        <YesterdayLine birds={[bird]} />
         {has('leftovers') && <LeftoverLine birds={[bird]} />}
         {bird.care_notes && <p className="care-notes">{bird.care_notes}</p>}
         <RequestList requests={requests.filter((r) => r.bird_id === bird.id)} showBird={false} />
@@ -414,7 +417,8 @@ function RoundOf({ round }: { round: number }) {
 
 /** One stop for a shared aviary: every bird in it fed with one FED, food left logged for the aviary */
 function RoundAviaryStop({ birds, onFed }: { birds: Bird[]; onFed: () => void }) {
-  const stop = useAviaryStop(birds);
+  const [delta, setDelta] = useState(0);
+  const stop = useAviaryStop(birds, delta);
   const { medications, doses, today, giveDose } = useStore();
   const [leftOpen, setLeftOpen] = useState(false);
   const meds = birds.flatMap((b) =>
@@ -454,22 +458,23 @@ function RoundAviaryStop({ birds, onFed }: { birds: Bird[]; onFed: () => void })
         {birds.map((b) => (
           <HealthAlerts key={b.id} bird={b} />
         ))}
+        <YesterdayLine birds={birds} />
         {has('leftovers') && <LeftoverLine birds={birds} />}
       </div>
       <div className="round-actions">
         {needsFeeding(stop.state) ? (
-          <button
-            className="btn btn-feed btn-xl round-fed"
-            onClick={() => {
+          <AviaryFedRow
+            stop={stop}
+            birds={birds}
+            delta={delta}
+            setDelta={setDelta}
+            extra={` · all ${birds.length}`}
+            onFed={() => {
               stop.feed();
+              setDelta(0);
               onFed();
             }}
-          >
-            <span className="btn-main">FED</span>
-            <span className="btn-sub">
-              {stop.total} · {stop.toFeed.length === birds.length ? `all ${birds.length}` : stop.toFeed.map((b) => b.name).join(', ')}
-            </span>
-          </button>
+          />
         ) : (
           <div className="round-done-note">{stop.state === 'fastday' ? '✓ Fast day' : '✓ Fed'}</div>
         )}

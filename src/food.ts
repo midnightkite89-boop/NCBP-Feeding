@@ -153,3 +153,24 @@ export function sumFeeds(feeds: { amount: string | null; food_type: string | nul
   }
   return [...[...totals].map(([food, qty]) => feedLabel(formatQty(qty), food)), ...other].join(', ');
 }
+
+/**
+ * A group's feeds changed by `delta` whole items in total (e.g. +1 chick for the aviary), one bird
+ * at a time from the first, never taking a bird below the minimum. Null when the amounts aren't a
+ * plain number of one food each (then − / + isn't offered).
+ */
+export function spreadChange<T extends { amount: string | null; food_type: string | null }>(feeds: T[], delta: number): T[] | null {
+  const parsed = feeds.map((f) => splitAmount(f.amount, f.food_type));
+  if (feeds.length === 0 || parsed.some((p) => !p || !p.food)) return null;
+  const qty = parsed.map((p) => p!.qty);
+  let left = delta;
+  for (let i = 0, tries = 0; left !== 0; i = (i + 1) % qty.length) {
+    const step = left > 0 ? 1 : -1;
+    if (qty[i] + step >= QTY_MIN) {
+      qty[i] += step;
+      left -= step;
+      tries = 0;
+    } else if (++tries >= qty.length) return null;
+  }
+  return feeds.map((f, j) => ({ ...f, food_type: parsed[j]!.food, amount: formatQty(qty[j]) }));
+}

@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { aviaryLabel, routeSort } from '../aviary';
 import {
+  CHECK_ITEMS,
   CONDITION_SCORES,
+  checkNotes,
   checkupEvery,
   checkupStatus,
   copedLabel,
@@ -49,7 +51,9 @@ export function Checkups() {
       {checkups == null ? (
         <p className="muted">Loading…</p>
       ) : (
-        GROUPS.map(({ state, title }) => {
+        <>
+        <ToZims checkups={checkups} onChanged={() => void reload()} />
+        {GROUPS.map(({ state, title }) => {
           const group = rows.filter((r) => r.status.state === state);
           if (group.length === 0) return null;
           return (
@@ -78,7 +82,8 @@ export function Checkups() {
               </ul>
             </section>
           );
-        })
+        })}
+        </>
       )}
       {recording && (
         <CheckupSheet
@@ -98,35 +103,53 @@ export function checkupSummary(c: BirdCheckup, bird: Bird): string {
   return [
     c.weight_g != null ? formatWeight(c.weight_g, bird.weight_unit) : null,
     c.condition_score != null ? `condition ${scoreLabel(c.condition_score)}` : null,
-    copedLabel(c) || null,
+    checkNotes(c) || copedLabel(c) || null,
   ]
     .filter(Boolean)
     .join(' · ');
 }
 
-/** Record one check. Saved straight away, so it needs a signal (it can be entered later with the right date). */
+/**
+ * Record one check, laid out like NCBP's paper form: ring, condition score and weight, then a
+ * tick and a note for each area. Saved straight away, so it needs a signal (the date can be set
+ * if it's entered later).
+ */
 export function CheckupSheet({ bird, onClose, onSaved }: { bird: Bird; onClose: () => void; onSaved: () => void }) {
   const { today } = useStore();
   const [date, setDate] = useState(today);
+  const [ring, setRing] = useState(bird.ring_microchip ?? '');
+  const [withWho, setWithWho] = useState('');
   const [weight, setWeight] = useState<number | null>(null);
   const [weightInvalid, setWeightInvalid] = useState(false);
   const [score, setScore] = useState<number | null>(null);
-  const [beak, setBeak] = useState(false);
-  const [talons, setTalons] = useState(false);
+  const [checks, setChecks] = useState<Record<string, { ok: boolean; note?: string }>>({});
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const setItem = (key: string, patch: Partial<{ ok: boolean; note: string }>) => setChecks((c) => ({ ...c, [key]: { ...c[key], ok: c[key]?.ok ?? false, ...patch } }));
+  const allTicked = CHECK_ITEMS.every((i) => checks[i.key]?.ok);
+
   async function save() {
     setBusy(true);
     setError(null);
+    const clean = Object.fromEntries(
+      Object.entries(checks)
+        .map(([k, v]) => [k, { ok: v.ok, ...(v.note?.trim() ? { note: v.note.trim() } : {}) }] as const)
+        .filter(([, v]) => v.ok || v.note),
+    );
+    const note = (k: string) => (clean[k]?.note ?? '').toLowerCase();
     const { error } = await supabase.from('bird_checkups').insert({
       bird_id: bird.id,
       checked_on: date,
       weight_g: weight,
       condition_score: score,
-      coped_beak: beak,
-      coped_talons: talons,
+      checks: clean,
+      ring_seen: ring.trim() || null,
+      done_with: withWho.trim() || null,
+      // Kept for older screens: a note saying the beak or talons were coped / trimmed
+      coped_beak: /cop|trim/.test(note('beak_out')),
+      coped_talons: /cop|trim/.test(note('talons')),
       notes: notes.trim() || null,
     });
     setBusy(false);
@@ -134,14 +157,37 @@ export function CheckupSheet({ bird, onClose, onSaved }: { bird: Bird; onClose: 
     onSaved();
   }
 
-  const nothing = weight == null && score == null && !beak && !talons && !notes.trim();
+  const nothing = weight == null && score == null && Object.keys(checks).length === 0 && !notes.trim();
 
   return (
     <Sheet title={`${bird.name}: health check`} onClose={onClose}>
+      <p className="muted checkup-who">
+        {[bird.species, bird.sex === 'M' ? 'Male' : bird.sex === 'F' ? 'Female' : null].filter(Boolean).join(' · ')}
+      </p>
+      <div className="field-row">
+        <label className="field">
+          <span>Date done</span>
+          <input type="date" value={date} max={today} onChange={(e) => setDate(e.target.value || today)} />
+        </label>
+        <label className="field">
+          <span>Done with</span>
+          <input value={withWho} onChange={(e) => setWithWho(e.target.value)} placeholder="Second person" />
+        </label>
+      </div>
       <label className="field">
-        <span>Date done</span>
-        <input type="date" value={date} max={today} onChange={(e) => setDate(e.target.value || today)} />
+        <span>Ring / microchip</span>
+        <input value={ring} onChange={(e) => setRing(e.target.value)} placeholder="As read today" />
       </label>
+      <div className="field">
+        <span>Condition score</span>
+        <div className="score-grid" role="radiogroup" aria-label="Condition score">
+          {CONDITION_SCORES.map((n) => (
+            <button type="button" key={n} role="radio" aria-checked={score === n} className={score === n ? 'on' : ''} onClick={() => setScore(score === n ? null : n)}>
+              {scoreLabel(n)}
+            </button>
+          ))}
+        </div>
+      </div>
       <WeightInput
         label="Weight"
         unit={bird.weight_unit ?? 'g'}
@@ -153,33 +199,66 @@ export function CheckupSheet({ bird, onClose, onSaved }: { bird: Bird; onClose: 
         }}
       />
       {weightInvalid && <p className="warn">That doesn't look like a weight.</p>}
-      <div className="field">
-        <span>Condition score (1 thin – 5 heavy)</span>
-        <div className="score-grid" role="radiogroup" aria-label="Condition score">
-          {CONDITION_SCORES.map((n) => (
-            <button type="button" key={n} role="radio" aria-checked={score === n} className={score === n ? 'on' : ''} onClick={() => setScore(score === n ? null : n)}>
-              {scoreLabel(n).replace('/5', '')}
-            </button>
-          ))}
+
+      <div className="check-items">
+        <div className="check-items-head">
+          <strong>Checked</strong>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => setChecks((c) => Object.fromEntries(CHECK_ITEMS.map((i) => [i.key, { ...c[i.key], ok: !allTicked }])))}
+          >
+            {allTicked ? 'Untick all' : 'Tick all'}
+          </button>
         </div>
+        {CHECK_ITEMS.map((i) => {
+          const c = checks[i.key];
+          return (
+            <div key={i.key} className={`check-item${c?.ok ? ' ok' : ''}`}>
+              <button type="button" className="check-tick" aria-pressed={!!c?.ok} onClick={() => setItem(i.key, { ok: !c?.ok })}>
+                <span className="check-box" aria-hidden="true">
+                  {c?.ok ? '✓' : ''}
+                </span>
+                {i.label}
+              </button>
+              <input className="check-note" value={c?.note ?? ''} onChange={(e) => setItem(i.key, { note: e.target.value })} placeholder="Note" aria-label={`${i.label} note`} />
+            </div>
+          );
+        })}
       </div>
-      <label className="check">
-        <input type="checkbox" checked={beak} onChange={(e) => setBeak(e.target.checked)} />
-        <span>Beak coped</span>
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={talons} onChange={(e) => setTalons(e.target.checked)} />
-        <span>Talons coped</span>
-      </label>
       <label className="field">
-        <span>Notes</span>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Feet, feathers, eyes, anything else" />
+        <span>Other notes</span>
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Anything else. Photos can go on a health issue." />
       </label>
       {error && <p className="warn">{error}</p>}
       <button className="btn btn-primary btn-xl" disabled={busy || weightInvalid || nothing} onClick={save}>
         {busy ? 'Saving…' : 'Save'}
       </button>
     </Sheet>
+  );
+}
+
+/** "Added to ZIMS" tick, done afterwards by whoever transcribes it */
+export function ZimsTick({ checkup, onChanged }: { checkup: BirdCheckup; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const done = !!checkup.zims_at;
+  return (
+    <button
+      type="button"
+      className={`zims-tick${done ? ' done' : ''}`}
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        await supabase.rpc('mark_checkup_zims', { p_id: checkup.id, p_done: !done });
+        setBusy(false);
+        onChanged();
+      }}
+    >
+      <span className="check-box" aria-hidden="true">
+        {done ? '✓' : ''}
+      </span>
+      {done ? 'Added to ZIMS' : 'Add to ZIMS, then tick'}
+    </button>
   );
 }
 
@@ -203,7 +282,9 @@ export function BirdCheckups({ bird }: { bird: Bird }) {
           {mine.slice(0, 4).map((c) => (
             <li key={c.id}>
               <strong>{formatDay(c.checked_on)}</strong> · {checkupSummary(c, bird) || 'checked'}
+              {c.done_with && <span className="muted"> · with {c.done_with}</span>}
               {c.notes && <div className="muted">{c.notes}</div>}
+              <ZimsTick checkup={c} onChanged={() => void reload()} />
             </li>
           ))}
         </ul>
@@ -225,6 +306,37 @@ export function BirdCheckups({ bird }: { bird: Bird }) {
           }}
         />
       )}
+    </section>
+  );
+}
+
+/** Checks not yet added to ZIMS, so whoever does the transcribing can work through them */
+function ToZims({ checkups, onChanged }: { checkups: BirdCheckup[]; onChanged: () => void }) {
+  const { birds } = useStore();
+  const waiting = checkups.filter((c) => !c.zims_at).sort((a, b) => b.checked_on.localeCompare(a.checked_on));
+  if (waiting.length === 0) return null;
+  return (
+    <section className="checkup-group checkup-zims">
+      <h2>
+        To add to ZIMS <span className="muted">({waiting.length})</span>
+      </h2>
+      <ul className="checkup-list">
+        {waiting.map((c) => {
+          const bird = birds.find((b) => b.id === c.bird_id);
+          if (!bird) return null;
+          return (
+            <li key={c.id} className="zims-row">
+              <div>
+                <strong>{bird.name}</strong> <span className="muted">{formatDay(c.checked_on)}</span>
+                <div className="checkup-last muted">
+                  {[c.ring_seen && `ring ${c.ring_seen}`, checkupSummary(c, bird), c.notes].filter(Boolean).join(' · ') || 'checked'}
+                </div>
+              </div>
+              <ZimsTick checkup={c} onChanged={onChanged} />
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

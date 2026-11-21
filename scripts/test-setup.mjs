@@ -43,5 +43,13 @@ const upd = await as(`update flight_plan set bird_ids = array[gen_random_uuid()]
 check('staff can add birds to a slot', upd.rows?.[0]?.n === 1, JSON.stringify(upd));
 const fly = await as(`insert into feed_logs (bird_id, status, flight_type, more_due) select id, 'flown', 'evening', false from birds limit 1 returning flight_type`);
 check('owl evening flights allowed', fly.error == null, JSON.stringify(fly));
+const egg = await as(`insert into breeding_logs (aviary_id, kind, count, logged_at) select id, 'egg', 2, now() + interval '3 days' from aviaries limit 1 returning staff_id, log_date = today_london() as today`);
+check('staff can log eggs; future dates come back to today', egg.rows?.[0]?.staff_id === U && egg.rows[0].today, JSON.stringify(egg));
+check('staff cannot edit a breeding entry', ((await as(`update breeding_logs set count = 9 returning id`)).rows ?? []).length === 0);
+const chk = await as(`insert into bird_checkups (bird_id, checks, condition_score) select id, '{"talons":{"ok":true,"note":"trimmed"}}', 3.5 from birds limit 1 returning id`);
+await as(`select mark_checkup_zims('${chk.rows?.[0]?.id}', true)`);
+const zims = await as(`select zims_at is not null as done from bird_checkups`);
+check('health check saved with areas, ZIMS can be ticked later', zims.rows?.[0]?.done === true, JSON.stringify(zims));
+
 console.log(failures ? `\n${failures} failed` : '\nAll checks passed');
 process.exit(failures ? 1 : 0);

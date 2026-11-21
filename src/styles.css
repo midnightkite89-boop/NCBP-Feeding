@@ -1244,3 +1244,49 @@ html, body { background: var(--bg); }
 .add-slot { width: 100%; }
 .slot-others summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
 .demo-times { margin-top: 20px; }
+.back-btn { font-size: 1rem; min-width: 0; padding: 6px 4px; color: var(--brand); justify-content: flex-start; }
+.yesterday-line { margin: 6px 0; padding: 6px 12px; border-radius: 12px; background: var(--card-2); font-size: 0.95rem; text-align: left; }
+.yesterday-left { color: var(--warn); font-weight: 600; }
+
+/* Undo: a slim strip at the top that doesn't cover the buttons */
+.undo-bar, .undo-bar.no-tabs {
+  top: calc(8px + env(safe-area-inset-top)); bottom: auto;
+  left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px);
+  padding: 4px 4px 4px 14px; gap: 10px; border-radius: 999px;
+  font-size: 0.9rem; font-weight: 600; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  animation: undo-in 0.18s ease-out;
+}
+.undo-bar > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.undo-bar .btn-undo { min-height: 34px; min-width: 0; padding: 4px 14px; font-size: 0.9rem; border-radius: 999px; }
+@keyframes undo-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+:root[data-theme='dark'] .undo-bar { background: #f2eef0; color: #141113; }
+:root[data-theme='dark'] .undo-bar .btn-undo { background: #141113; color: #fff; }
+
+/* Health check form */
+.checkup-who { margin: -4px 0 6px; }
+.check-items { margin: 12px 0; border: 1px solid var(--hair); border-radius: 16px; overflow: hidden; background: var(--card); }
+.check-items-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--card-2); }
+.check-items-head .btn { min-height: 36px; padding: 4px 14px; font-size: 0.9rem; }
+.check-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-top: 1px solid var(--hair); }
+.check-tick { flex: 1.2; display: flex; align-items: center; gap: 10px; min-height: 44px; border: 0; background: none; color: var(--ink); font: inherit; font-size: 1rem; font-weight: 600; text-align: left; cursor: pointer; padding: 0; }
+.check-box { flex: none; width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid var(--hair-strong); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; }
+.check-item.ok .check-box, .zims-tick.done .check-box { background: var(--fed); border-color: var(--fed); }
+.check-note { flex: 1; min-width: 0; min-height: 40px; padding: 6px 10px; border: 1px solid var(--hair-strong); border-radius: 10px; font: inherit; font-size: 0.95rem; background: var(--card); color: var(--ink); }
+.zims-tick { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; min-height: 40px; border: 0; background: none; color: var(--ink); font: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; padding: 0; }
+.zims-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--hair); }
+.checkup-zims h2 { color: var(--brand); }
+
+/* Breeding */
+.breeding-tally { display: flex; flex-wrap: wrap; gap: 14px; margin: 4px 0; }
+.breeding-tally strong { font-size: 1.3rem; }
+.breeding-last { margin: 4px 0 10px; }
+.breeding-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.breeding-buttons .btn { min-height: 44px; padding: 4px 6px; font-size: 0.95rem; }
+.breeding-history { margin-top: 10px; }
+.breeding-history summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.breeding-history ul { padding-left: 1rem; margin: 0; }
+.breeding-history li { margin: 4px 0; }
+.breeding-remove { min-height: 28px; font-size: 0.9rem; padding: 0 8px; color: var(--muted); }
+.breeding-choose { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Round mode: sit just under the round's own header (End round, progress) */
+.undo-bar.no-tabs { top: calc(64px + env(safe-area-inset-top)); }

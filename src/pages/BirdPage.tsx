@@ -1,3 +1,4 @@
+import { BackButton } from '../components/BackButton';
 import { I } from '../components/Icon';
 import { BirdCheckups } from './Checkups';
 import { useEffect, useState } from 'react';
@@ -61,6 +62,7 @@ export function BirdPage() {
 
   return (
     <div className="bird-page">
+      <BackButton />
       <BirdCard bird={bird} detailed />
 
       <section className="panel">

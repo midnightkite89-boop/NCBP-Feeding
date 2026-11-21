@@ -187,6 +187,7 @@ const VOIDS: Record<string, string> = {
   void_ferret_log: 'ferret_logs',
   void_flight_track: 'flight_tracks',
   void_checkup: 'bird_checkups',
+  void_breeding_log: 'breeding_logs',
 };
 
 function rpc(name: string, args: Row): unknown {
@@ -199,6 +200,8 @@ function rpc(name: string, args: Row): unknown {
     for (const r of rows('care_logs')) if (r.id === args.log_id) Object.assign(r, { resolved_at: now(), resolved_by: db.user, resolution: args.action });
   } else if (name === 'remove_from_clean_plan') {
     rows('clean_plan').push(withDefaults('clean_plan', { plan_date: args.p_date, aviary_id: args.p_aviary, removed_by: db.user, removed_at: now() }));
+  } else if (name === 'mark_checkup_zims') {
+    for (const r of rows('bird_checkups')) if (r.id === args.p_id) Object.assign(r, { zims_at: args.p_done ? now() : null, zims_by: args.p_done ? db.user : null });
   } else if (name === 'set_bird_targets') {
     for (const r of rows('birds'))
       if (r.id === args.p_bird) Object.assign(r, { target_weight_min: args.p_min, target_weight_max: args.p_max, default_portion: args.p_portion });

@@ -56,7 +56,7 @@ export function Layout() {
         <div className={`undo-bar${fullScreen ? ' no-tabs' : ''}`} role="status">
           <span>✓ {undo.label}</span>
           <button className="btn btn-undo" onClick={undoLast}>
-            UNDO
+            Undo
           </button>
         </div>
       )}

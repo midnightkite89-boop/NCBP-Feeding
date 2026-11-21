@@ -25,6 +25,22 @@ export interface Aviary {
   clean_overdue_days?: number | null;
   /** Has a bath to check and clean (default true) */
   has_bath?: boolean;
+  /** A breeding aviary: shows on the breeding page */
+  breeding?: boolean;
+}
+
+export type BreedingKind = 'nest_check' | 'egg' | 'hatched' | 'fledged' | 'lost' | 'note';
+
+export interface BreedingLog {
+  id: string;
+  aviary_id: string;
+  kind: BreedingKind;
+  count: number | null;
+  notes: string | null;
+  logged_at: string;
+  log_date: string;
+  staff_id: string;
+  voided_at: string | null;
 }
 
 export type BirdTeam = 'flying' | 'resting' | 'aviary';
@@ -222,6 +238,14 @@ export interface BirdCheckup {
   logged_at: string;
   staff_id: string;
   voided_at: string | null;
+  /** Each area on the form: ticked when checked, with a note, e.g. { talons: { ok: true, note: 'trimmed' } } */
+  checks?: Record<string, { ok: boolean; note?: string }>;
+  /** Ring / microchip as read on the day */
+  ring_seen?: string | null;
+  /** The second person, e.g. "CD" */
+  done_with?: string | null;
+  /** When it was added to ZIMS (ticked afterwards) */
+  zims_at?: string | null;
 }
 
 export function roundNames(s: CareSettings): string[] {

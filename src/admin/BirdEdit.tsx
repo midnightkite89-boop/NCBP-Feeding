@@ -6,7 +6,7 @@ import { WeightInput } from '../components/WeightInput';
 import { FoodPicker, QtyStepper } from '../components/FoodPicker';
 import { defaultFeed } from '../status';
 import { formatQty } from '../food';
-import { aviaryLabel, compareAviaries } from '../aviary';
+import { aviaryLabel, compareAviaries, placeOnRoute } from '../aviary';
 import { useStore } from '../store';
 import { supabase } from '../supabase';
 import { WEEKDAYS } from '../time';
@@ -42,7 +42,7 @@ export function BirdEdit() {
 
 function BirdForm({ existing }: { existing: Bird | undefined }) {
   const navigate = useNavigate();
-  const { aviaries, refresh, careSettings } = useStore();
+  const { aviaries, refresh, careSettings, birds } = useStore();
   const isNew = !existing;
   const [form, setForm] = useState<Omit<Bird, 'id'>>({ ...BLANK, ...existing });
   const [photo, setPhoto] = useState<File | null>(null);
@@ -75,6 +75,11 @@ function BirdForm({ existing }: { existing: Bird | undefined }) {
     const res = isNew ? await supabase.from('birds').insert({ id: birdId, ...row }) : await supabase.from('birds').update(row).eq('id', birdId);
     setBusy(false);
     if (res.error) return setError(res.error.code === '23505' ? 'There is already a bird with that name.' : res.error.message);
+    // A new bird, or one moved to another aviary, goes next to its aviary on the round
+    if (row.aviary_id && (isNew || existing?.aviary_id !== row.aviary_id)) {
+      for (const c of placeOnRoute({ ...(existing ?? {}), ...row, id: birdId } as Bird, birds, aviaries))
+        await supabase.from('birds').update({ route_order: c.route_order }).eq('id', c.id);
+    }
     await refresh();
     navigate('/admin/birds');
   }

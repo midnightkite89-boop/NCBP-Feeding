@@ -24,6 +24,7 @@ import { Round } from './pages/Round';
 import { FeedSheet } from './pages/FeedSheet';
 import { Checkups } from './pages/Checkups';
 import { Timetable } from './pages/Timetable';
+import { Breeding } from './pages/Breeding';
 import { Session } from './pages/Session';
 import { AalHome, R1Page, R2List, R2Page, R3Page, R4Page, R5Page } from './pages/Aal';
 import { NewOutingPage, OutingPage, OutingR6, OutingR7, OutingR8, OutingsPage } from './pages/Outings';
@@ -68,6 +69,7 @@ function Gate() {
         <Route path="feed-sheet" element={<FeedSheet />} />
         <Route path="checkups" element={<Checkups />} />
         <Route path="flying" element={<Timetable />} />
+        <Route path="breeding" element={<Breeding />} />
         <Route path="feed-sheet/:section" element={<FeedSheet />} />
         <Route path="weigh/records/:id" element={<Records />} />
         <Route path="clean" element={<Clean />} />

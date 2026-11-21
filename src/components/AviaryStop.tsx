@@ -2,7 +2,7 @@ import { I } from './Icon';
 import { useState } from 'react';
 import { aviaryLabel } from '../aviary';
 import { has } from '../centre';
-import { sumFeeds } from '../food';
+import { spreadChange, sumFeeds } from '../food';
 import { leftoverTrend } from '../leftovers';
 import { birdStatus, needsFeeding, quickFeedEntry, type BirdState } from '../status';
 import { useStore } from '../store';
@@ -12,14 +12,18 @@ import { BirdRow } from './BirdCard';
 import { LeftoverLine, LeftoverSheet } from './Leftovers';
 
 /** A shared aviary's feed today: who still needs feeding, the total, and one FED for all of them. */
-export function useAviaryStop(birds: Bird[]) {
+export function useAviaryStop(birds: Bird[], delta = 0) {
   const { todayLogs, today, aviaries, logFeeds, leftovers } = useStore();
   const aviary = aviaries.find((a) => a.id === birds[0].aviary_id);
   const title = aviary ? aviaryLabel(aviary) : birds[0].name;
   const statuses = birds.map((b) => ({ bird: b, status: birdStatus(b, todayLogs.filter((l) => l.bird_id === b.id), today) }));
   const toFeed = statuses.filter((s) => needsFeeding(s.status.state));
-  const entries = toFeed.map((s) => quickFeedEntry(s.bird, s.status));
+  const usualEntries = toFeed.map((s) => quickFeedEntry(s.bird, s.status));
+  // − / + changes the aviary's total, a bird at a time
+  const changed = delta !== 0 ? spreadChange(usualEntries, delta) : null;
+  const entries = changed ?? usualEntries;
   const total = sumFeeds(entries);
+  const usualTotal = sumFeeds(usualEntries);
   let state: BirdState;
   if (toFeed.length === 0) state = statuses.every((s) => s.status.state === 'fastday' || s.status.state === 'fasting') ? 'fastday' : 'fed';
   else state = toFeed.length < birds.length ? 'part' : 'todo';
@@ -33,6 +37,10 @@ export function useAviaryStop(birds: Bird[]) {
     title,
     state,
     total,
+    usualTotal,
+    nudged: !!changed,
+    canMore: spreadChange(usualEntries, delta + 1) != null,
+    canLess: spreadChange(usualEntries, delta - 1) != null,
     toFeed: toFeed.map((s) => s.bird),
     lastFed,
     leavingFood,
@@ -105,7 +113,8 @@ function AviaryNumber({ birds }: { birds: Bird[] }) {
 
 /** The whole aviary: total feed, FED for all, food left; each bird below for anything individual. */
 export function AviaryCard({ birds }: { birds: Bird[] }) {
-  const stop = useAviaryStop(birds);
+  const [delta, setDelta] = useState(0);
+  const stop = useAviaryStop(birds, delta);
   const [leftOpen, setLeftOpen] = useState(false);
   return (
     <article className={`bird-card aviary-card state-${stop.state}`}>
@@ -116,13 +125,16 @@ export function AviaryCard({ birds }: { birds: Bird[] }) {
       {has('leftovers') && <LeftoverLine birds={birds} />}
       <div className="card-actions">
         {needsFeeding(stop.state) && (
-          <button className="btn btn-feed btn-xl" onClick={stop.feed}>
-            <span className="btn-main">FED</span>
-            <span className="btn-sub">
-              {stop.total}
-              {stop.toFeed.length < birds.length && ` (${stop.toFeed.map((b) => b.name).join(', ')})`}
-            </span>
-          </button>
+          <AviaryFedRow
+            stop={stop}
+            birds={birds}
+            delta={delta}
+            setDelta={setDelta}
+            onFed={() => {
+              stop.feed();
+              setDelta(0);
+            }}
+          />
         )}
         <div className="card-actions-row">
           {has('leftovers') && (
@@ -140,5 +152,45 @@ export function AviaryCard({ birds }: { birds: Bird[] }) {
       </details>
       {leftOpen && <LeftoverSheet birds={birds} title={stop.title} onClose={() => setLeftOpen(false)} />}
     </article>
+  );
+}
+
+/** − FED + for a whole aviary: − / + change the total by one, FED feeds everyone still to feed */
+export function AviaryFedRow({
+  stop,
+  birds,
+  delta,
+  setDelta,
+  onFed,
+  extra,
+}: {
+  stop: ReturnType<typeof useAviaryStop>;
+  birds: Bird[];
+  delta: number;
+  setDelta: (d: number) => void;
+  onFed: () => void;
+  extra?: string;
+}) {
+  const showNudge = stop.canMore || stop.canLess || delta !== 0;
+  return (
+    <div className="round-fed-row">
+      {showNudge && (
+        <button className="btn btn-outline qty-nudge" onClick={() => setDelta(delta - 1)} disabled={!stop.canLess} aria-label="One less for the aviary">
+          −
+        </button>
+      )}
+      <button className={`btn btn-feed btn-xl round-fed${stop.nudged ? ' nudged' : ''}`} onClick={onFed}>
+        <span className="btn-main">FED</span>
+        <span className="btn-sub">
+          {stop.total}
+          {stop.nudged ? ` (usual ${stop.usualTotal})` : stop.toFeed.length < birds.length ? ` (${stop.toFeed.map((b) => b.name).join(', ')})` : extra ?? ''}
+        </span>
+      </button>
+      {showNudge && (
+        <button className="btn btn-outline qty-nudge" onClick={() => setDelta(delta + 1)} disabled={!stop.canMore} aria-label="One more for the aviary">
+          +
+        </button>
+      )}
+    </div>
   );
 }

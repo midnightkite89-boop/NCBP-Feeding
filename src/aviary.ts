@@ -79,3 +79,29 @@ export function feedStops(ordered: Bird[]): Bird[][] {
   }
   return stops;
 }
+
+/**
+ * Where a bird goes on the round when it's added or moved: straight after the birds already in
+ * its aviary, else after the nearest lower-numbered aviary in the same section, else at the start
+ * of the section, else at the end. Returns every route position that needs to change (in tens).
+ */
+export function placeOnRoute(bird: Bird, all: Bird[], aviaries: Aviary[]): { id: string; route_order: number }[] {
+  const byId = new Map(aviaries.map((a) => [a.id, a]));
+  const others = routeSort(all.filter((b) => b.status === 'active' && b.id !== bird.id), aviaries);
+  const mine = bird.aviary_id ? byId.get(bird.aviary_id) : undefined;
+  const sameSection = (b: Bird) => {
+    const a = b.aviary_id ? byId.get(b.aviary_id) : undefined;
+    return !!a && !!mine && a.name.toLowerCase() === mine.name.toLowerCase();
+  };
+  let at = others.length;
+  if (mine) {
+    const lastMate = others.findLastIndex((b) => b.aviary_id === mine.id);
+    const lastLower = others.findLastIndex((b) => sameSection(b) && (byId.get(b.aviary_id!)!.number ?? -1) <= (mine.number ?? -1));
+    const firstInSection = others.findIndex(sameSection);
+    if (lastMate >= 0) at = lastMate + 1;
+    else if (lastLower >= 0) at = lastLower + 1;
+    else if (firstInSection >= 0) at = firstInSection;
+  }
+  const next = [...others.slice(0, at), bird, ...others.slice(at)];
+  return next.map((b, i) => ({ id: b.id, route_order: (i + 1) * 10 })).filter((c, i) => next[i].route_order !== c.route_order);
+}
