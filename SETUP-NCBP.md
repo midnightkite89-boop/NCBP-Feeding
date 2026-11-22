@@ -65,5 +65,5 @@ Microsoft app registration is done (client ID `ead7c9dc-355a-42b4-a286-2ba20efcb
 
 ## Stock list (22 Nov 2026)
 
-- [ ] **SQL Editor:** paste all of `supabase/migrations/028_stock_list.sql` → **Run** (arrival / leaving dates on birds, species IUCN and hazard; hazard filled in as 2, condors 1).
-- [ ] **Edge Functions → onedrive-sync → Code:** replace everything with the new `supabase/functions/onedrive-sync/index.ts` → **Deploy** (adds the stock list to the OneDrive copy). Verify JWT stays off.
+- [x] **SQL Editor:** paste all of `supabase/migrations/028_stock_list.sql` → **Run** (arrival / leaving dates on birds, species IUCN and hazard; hazard filled in as 2, condors 1).
+- [x] **Edge Functions → onedrive-sync → Code:** replace everything with the new `supabase/functions/onedrive-sync/index.ts` → **Deploy** (adds the stock list to the OneDrive copy). Verify JWT stays off.
