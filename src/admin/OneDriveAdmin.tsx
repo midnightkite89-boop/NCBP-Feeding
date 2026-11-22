@@ -67,9 +67,10 @@ export function OneDriveAdmin() {
     <div className="onedrive-page">
       <h1 className="page-title">OneDrive copying</h1>
       <p className="muted">
-        Every half hour the app copies its records into one OneDrive folder: a folder for each bird with its weekly records and health checks (a PDF each,
-        like the paper form), the weekly weight and feeding chart, feed sheets for each barn, and breeding records. Staff and inspectors can find them
-        there, and they stay yours even without the app.
+        Every half hour the app copies its records into one OneDrive folder. Each bird has its own folder with its bird record, a health and vet
+        log (issues, medication, every dose), its health checks (a PDF each, like the paper form) and its photos. Alongside them: one weekly
+        records sheet for every bird (weight when weighed, fed, food left) and the breeding records. Staff and inspectors can find them there, and
+        they stay yours even without the app.
       </p>
       {msg && <p className={msg.startsWith('Not') || msg.startsWith('Copy failed') || msg.startsWith("Couldn't") ? 'warn' : 'ok-note'}>{msg}</p>}
 

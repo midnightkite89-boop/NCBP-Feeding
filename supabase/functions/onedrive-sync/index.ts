@@ -1,14 +1,14 @@
 // onedrive-sync: copies the app's records into the centre's OneDrive folder.
 //
-//   Birds/<bird>/                              a folder for every bird, like the SMJ database
-//     Weekly records/<Monday> week.csv          each day: weight, fed, food left, flown, notes, who
-//     Health checks/<date> health check.pdf     one per check, laid out like NCBP's paper form
-//                                               (sent again if it's later ticked as added to ZIMS)
-//   Weekly charts/<Monday> weights and feeding.csv   flying and resting birds, weight and food each day
-//   Feed sheets/<Monday> <barn>.csv            fed and left per aviary, for each barn
-//   Breeding/Breeding <year>.csv               every nest check, egg, hatching, fledging, loss, note
+//   Birds/<bird>/                                  everything about one bird, like the SMJ database
+//     <bird> - bird record.pdf                     its details: species, ring, sex, aviary, food, targets, notes…
+//     Health and vet log.csv                       health issues, updates, medication and every dose given
+//     Health checks/<date> health check.pdf        one per check, laid out like NCBP's paper form
+//     Photos/                                      the bird's photo, health photos, prescriptions
+//   Weekly records/<Monday> week.csv               every bird: weight (when weighed), fed and food left each day
+//   Breeding/Breeding <year>.csv                   every nest check, egg, hatching, fledging, loss, note
 //
-// Weekly files cover this week and last week. Files are only sent when they've changed, and a run
+// Weekly records cover this week and last week. Files are only sent when they've changed, and a run
 // stops after about 100 seconds and carries on next time (the first run has a lot to make).
 // Runs every 30 minutes (pg_cron) and from "Copy now".
 // Deploy with "Verify JWT" OFF; it checks the caller itself (the schedule's key, or a signed-in user).
@@ -22,7 +22,6 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const SCOPES = 'offline_access Files.ReadWrite User.Read';
-const MAX_PDFS = 40; // per run, so a big backlog is spread over a few runs
 
 // ---------------------------------------------------------------------------
 // Building the files (no network; also run by scripts/test-onedrive.mjs)
@@ -172,51 +171,7 @@ export function sumFeeds(feeds: { amount: string | null; food_type: string | nul
 const csvCell = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 export const csv = (rows: string[][]) => '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
 
-export interface SheetBird {
-  id: string;
-  name: string;
-  species: string | null;
-  team: string;
-  aviary_id: string | null;
-  route_order: number | null;
-}
-export interface SheetLog {
-  bird_id: string;
-  log_date: string;
-  status: string;
-  food_type: string | null;
-  amount: string | null;
-}
-
-/** A barn's week: one row per aviary (birds sharing an aviary together), Fed and Left for each day */
-export function feedSheetCsv(barn: string, monday: string, birds: SheetBird[], aviaryLabel: (id: string | null) => string, logs: SheetLog[]): string {
-  const days = Array.from({ length: 7 }, (_, i) => new Date(Date.parse(`${monday}T12:00:00Z`) + i * 864e5).toISOString().slice(0, 10));
-  const stops = new Map<string, SheetBird[]>();
-  for (const b of birds) {
-    const key = b.aviary_id ?? b.id;
-    stops.set(key, [...(stops.get(key) ?? []), b]);
-  }
-  const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const rows: string[][] = [
-    [`${barn} feed sheet, week commencing ${ukDate(monday)}`],
-    ['Aviary', 'Birds', ...days.flatMap((d, i) => [`${names[i]} ${ukDate(d).slice(0, 5)} fed`, 'left'])],
-  ];
-  for (const stop of stops.values()) {
-    const ids = new Set(stop.map((b) => b.id));
-    rows.push([
-      aviaryLabel(stop[0].aviary_id),
-      stop.map((b) => b.name).join(', '),
-      ...days.flatMap((d) => {
-        const day = logs.filter((l) => l.log_date === d && ids.has(l.bird_id));
-        const fed = sumFeeds(day.filter((l) => l.status === 'fed'));
-        return [fed || (day.some((l) => l.status === 'fasting') ? 'Fast' : ''), sumFeeds(day.filter((l) => l.status === 'left'))];
-      }),
-    ]);
-  }
-  return csv(rows);
-}
-
-/** Grams in the bird's own unit, e.g. "1150 g" or "2 lb 8.5 oz" */
+/** Grams in the bird's own unit, e.g. "1150 g" or "2 lb 8.57 oz" */
 export function weightText(grams: number, unit: string | null): string {
   if (unit !== 'lb_oz') return `${Math.round(grams * 10) / 10} g`;
   const totalOz = Math.round((grams / 28.349523125) * 100) / 100;
@@ -225,64 +180,101 @@ export function weightText(grams: number, unit: string | null): string {
   return lb > 0 ? `${lb} lb ${oz} oz` : `${oz} oz`;
 }
 
-export interface WeekLog extends SheetLog {
+export interface WeekLog {
+  bird_id: string;
+  log_date: string;
+  status: string;
+  food_type: string | null;
+  amount: string | null;
   weight_g: number | null;
-  notes: string | null;
-  flight_type: string | null;
-  logged_at: string;
-  staff_id: string;
-  more_due?: boolean | null;
 }
-const FLIGHT: Record<string, string> = { display: 'Demonstration', experience: 'Experience', training: 'Training', school: 'School', evening: 'Owl evening', other: 'Other' };
 const weekDays = (monday: string) => Array.from({ length: 7 }, (_, i) => new Date(Date.parse(`${monday}T12:00:00Z`) + i * 864e5).toISOString().slice(0, 10));
-const hhmm = (iso: string) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 
-/** One bird's week, a row a day: the record that used to go on the paper weight / feed chart */
-export function birdWeekCsv(bird: { name: string; species: string | null; weight_unit: string | null }, aviary: string, monday: string, logs: WeekLog[], staff: (id: string) => string): string {
-  const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const rows: string[][] = [
-    [`${bird.name} (${bird.species ?? ''}), ${aviary}: week commencing ${ukDate(monday)}`],
-    ['Day', 'Date', 'Weight', 'Fed', 'Food left', 'Fasting', 'Flown', 'Notes', 'Logged by'],
-  ];
-  weekDays(monday).forEach((d, i) => {
-    const day = logs.filter((l) => l.log_date === d).sort((a, b) => a.logged_at.localeCompare(b.logged_at));
-    rows.push([
-      names[i],
-      ukDate(d),
-      day.filter((l) => l.weight_g != null).map((l) => weightText(l.weight_g!, bird.weight_unit)).join(' / '),
-      sumFeeds(day.filter((l) => l.status === 'fed')),
-      sumFeeds(day.filter((l) => l.status === 'left')),
-      day.some((l) => l.status === 'fasting') ? 'Yes' : '',
-      day.filter((l) => l.status === 'flown').map((l) => `${hhmm(l.logged_at)} ${FLIGHT[l.flight_type ?? ''] ?? 'Flown'}`).join(', '),
-      day.map((l) => l.notes).filter(Boolean).join(' | '),
-      [...new Set(day.map((l) => staff(l.staff_id)).filter(Boolean))].join(', '),
-    ]);
-  });
-  return csv(rows);
-}
-
-/** The weekly chart: flying and resting birds down the side, weight and food for each day */
-export function weeklyChartCsv(monday: string, birds: { id: string; name: string; weight_unit: string | null; aviary: string }[], logs: WeekLog[]): string {
+/** The week for every bird, section by section: weight (when weighed), fed and food left each day */
+export function weeklyRecordsCsv(monday: string, birds: { id: string; name: string; weight_unit: string | null; aviary: string; section: string }[], logs: WeekLog[]): string {
   const days = weekDays(monday);
   const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const rows: string[][] = [
-    [`Weights and feeding, week commencing ${ukDate(monday)}`],
-    ['Bird', 'Aviary', ...days.flatMap((d, i) => [`${names[i]} ${ukDate(d).slice(0, 5)} weight`, 'food'])],
+    [`Weekly records, week commencing ${ukDate(monday)}`],
+    ['Bird', 'Aviary', ...days.flatMap((d, i) => [`${names[i]} ${ukDate(d).slice(0, 5)} weight`, 'fed', 'left'])],
   ];
+  let section = '';
   for (const b of birds) {
+    if (b.section !== section) {
+      section = b.section;
+      rows.push([section.toUpperCase()]);
+    }
     const mine = logs.filter((l) => l.bird_id === b.id);
     rows.push([
       b.name,
       b.aviary,
       ...days.flatMap((d) => {
         const day = mine.filter((l) => l.log_date === d);
-        const w = day.filter((l) => l.weight_g != null).map((l) => weightText(l.weight_g!, b.weight_unit)).join(' / ');
         const fed = sumFeeds(day.filter((l) => l.status === 'fed'));
-        return [w, fed || (day.some((l) => l.status === 'fasting') ? 'Fast' : '')];
+        return [
+          day.filter((l) => l.weight_g != null).map((l) => weightText(l.weight_g!, b.weight_unit)).join(' / '),
+          fed || (day.some((l) => l.status === 'fasting') ? 'Fast' : ''),
+          sumFeeds(day.filter((l) => l.status === 'left')),
+        ];
       }),
     ]);
   }
   return csv(rows);
+}
+
+/** A bird's details on one page: what used to be its record card */
+export async function birdRecordPdf(title: string, sections: { heading: string; rows: [string, string][] }[], centre: string): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  let page = doc.addPage([595, 842]);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const plum = rgb(0.53, 0.13, 0.31);
+  page.drawText(pdfText(centre), { x: 40, y: 790, size: 12, font: bold, color: plum });
+  page.drawText(pdfText(title), { x: 40, y: 766, size: 20, font: bold });
+  let y = 730;
+  const wrap = (s: string, width: number) => {
+    const out: string[] = [];
+    let cur = '';
+    for (const w of pdfText(s).split(/\s+/).filter(Boolean)) {
+      if (cur && font.widthOfTextAtSize(`${cur} ${w}`, 10) > width) {
+        out.push(cur);
+        cur = w;
+      } else cur = cur ? `${cur} ${w}` : w;
+    }
+    if (cur) out.push(cur);
+    return out.length ? out : [''];
+  };
+  for (const sec of sections) {
+    const rows = sec.rows.filter(([, v]) => v);
+    if (rows.length === 0) continue;
+    if (y < 120) {
+      page = doc.addPage([595, 842]);
+      y = 790;
+    }
+    page.drawText(pdfText(sec.heading), { x: 40, y, size: 12, font: bold, color: plum });
+    y -= 18;
+    for (const [label, value] of rows) {
+      const lines = wrap(value, 360);
+      if (y - lines.length * 13 < 50) {
+        page = doc.addPage([595, 842]);
+        y = 790;
+      }
+      page.drawText(pdfText(label), { x: 40, y, size: 10, font: bold });
+      lines.forEach((l, i) => page.drawText(l, { x: 190, y: y - i * 13, size: 10, font }));
+      y -= Math.max(16, lines.length * 13 + 4);
+    }
+    y -= 10;
+  }
+  return doc.save();
+}
+
+/** Everything health-related for a bird, oldest first, one line each */
+export function healthLogCsv(bird: string, events: { date: string; time: string; kind: string; detail: string; action: string; by: string }[]): string {
+  return csv([
+    [`${bird}: health and vet log`],
+    ['Date', 'Time', 'What', 'Details', 'Action taken', 'By'],
+    ...[...events].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map((e) => [ukDate(e.date), e.time, e.kind, e.detail, e.action, e.by]),
+  ]);
 }
 
 const KIND: Record<string, string> = { nest_check: 'Nest check', egg: 'Eggs laid', hatched: 'Hatched', fledged: 'Fledged', lost: 'Lost', note: 'Note' };
@@ -365,13 +357,17 @@ async function run(): Promise<{ copied: number; skipped: number; more: boolean }
   const copiedHash = new Map((done ?? []).map((d) => [d.key, d.hash]));
   let copied = 0;
   let skipped = 0;
-  /** Uploads (or replaces) a file if it changed since last time */
-  async function put(key: string, path: string[], file: string, body: Uint8Array | string, type: string) {
-    const h = await hash(body);
+  /**
+   * Uploads (or replaces) a file when it has changed. `sig` describes the content (for PDFs, whose
+   * bytes differ every time they're made); the file is only built when the sig is new.
+   */
+  async function put(key: string, sig: string, path: string[], file: string, make: () => Promise<Uint8Array | string> | Uint8Array | string, type: string) {
+    const h = await hash(sig);
     if (copiedHash.get(key) === h) {
       skipped++;
       return;
     }
+    const body = await make();
     const parent = await folder(path);
     const r = await graph(`/me/drive/items/${parent}:/${encodeURIComponent(safe(file))}:/content`, { method: 'PUT', headers: { 'Content-Type': type }, body: body as BodyInit });
     if (!r.ok) throw new Error(`Uploading ${[...path, file].join('/')}: ${r.status} ${(await r.text()).slice(0, 200)}`);
@@ -379,36 +375,134 @@ async function run(): Promise<{ copied: number; skipped: number; more: boolean }
     copiedHash.set(key, h);
     copied++;
   }
+  const stop = () => {
+    if (!timeUp()) return false;
+    more = true;
+    return true;
+  };
 
   const [{ data: birds }, { data: aviaries }, { data: profiles }] = await Promise.all([
-    db.from('birds').select('id, name, species, sex, team, aviary_id, route_order, status, weight_unit'),
-    db.from('aviaries').select('id, name, number'),
+    db.from('birds').select('*'),
+    db.from('aviaries').select('id, name, number, breeding'),
     db.from('profiles').select('id, display_name'),
   ]);
+  const aviaryOf = (id: string | null) => (aviaries ?? []).find((x) => x.id === id);
   const aviaryLabel = (id: string | null) => {
-    const a = (aviaries ?? []).find((x) => x.id === id);
+    const a = aviaryOf(id);
     return a ? (a.number != null ? `${a.name} ${a.number}` : a.name) : 'No aviary';
   };
   const staff = (id: string | null) => (profiles ?? []).find((p) => p.id === id)?.display_name ?? '';
+  const today = londonToday();
+  const active = [...(birds ?? [])].filter((b) => b.status === 'active').sort((x, y) => (x.route_order ?? 1e9) - (y.route_order ?? 1e9));
+  const hhmm = (iso: string) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  const londonDay = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date(iso));
 
-  // 1) Health checks, oldest first, a batch per run
-  const { data: checks } = await db.from('bird_checkups').select('*').is('voided_at', null).order('checked_on');
-  let pdfs = 0;
-  for (const c of checks ?? []) {
-    const bird = (birds ?? []).find((b) => b.id === c.bird_id);
-    if (!bird) continue;
-    const key = `checkup:${c.id}`;
-    const stamp = `${c.zims_at ? 'zims' : ''}`;
-    if (copiedHash.has(key) && copiedHash.get(`${key}:state`) === stamp) continue;
-    if (pdfs++ >= MAX_PDFS || timeUp()) {
-      more = true;
-      break;
-    }
-    const pdf = await checkupPdf(
+  // Health records for every bird, loaded once
+  const [{ data: checks }, { data: issues }, { data: entries }, { data: meds }, { data: doses }] = await Promise.all([
+    db.from('bird_checkups').select('*').is('voided_at', null).order('checked_on'),
+    db.from('health_issues').select('*').is('voided_at', null),
+    db.from('health_entries').select('*').is('voided_at', null),
+    db.from('medications').select('*').is('voided_at', null),
+    db.from('med_doses').select('*').is('voided_at', null),
+  ]);
+
+  // 1) The weekly records: every bird, this week and last week
+  for (const monday of [mondayOf(addDays(today, -7)), mondayOf(today)]) {
+    if (stop()) break;
+    const { data: weekLogs } = await db
+      .from('feed_logs')
+      .select('bird_id, log_date, status, food_type, amount, weight_g')
+      .in('status', ['fed', 'left', 'fasting', 'weighed'])
+      .is('voided_at', null)
+      .gte('log_date', monday)
+      .lte('log_date', addDays(monday, 6));
+    const list = active.map((b) => ({ id: b.id, name: b.name, weight_unit: b.weight_unit, aviary: aviaryLabel(b.aviary_id), section: aviaryOf(b.aviary_id)?.name ?? 'No aviary' }));
+    const sheet = weeklyRecordsCsv(monday, list, (weekLogs ?? []) as WeekLog[]);
+    await put(`week:${monday}`, sheet, ['Weekly records'], `${monday} week.csv`, () => sheet, 'text/csv');
+  }
+
+  // 2) Each bird's folder: record, health and vet log, health checks
+  for (const b of active) {
+    if (stop()) break;
+    const dir = ['Birds', b.name];
+
+    const lastCheck = (checks ?? []).filter((c) => c.bird_id === b.id).at(-1);
+    const openIssues = (issues ?? []).filter((i) => i.bird_id === b.id && !i.closed_at);
+    const currentMeds = (meds ?? []).filter((m) => m.bird_id === b.id && !m.stopped_at && (!m.end_date || m.end_date >= today));
+    const fast = (b.fast_days ?? []).map((d: number) => ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d]).join(', ');
+    const target = [b.target_weight_min, b.target_weight_max].filter((x) => x != null).map((g) => weightText(g, b.weight_unit)).join(' – ');
+    const team = { flying: 'Flying team', resting: 'Flying team (resting)', aviary: 'Aviary bird' }[b.team as string] ?? '';
+    const sections: { heading: string; rows: [string, string][] }[] = [
       {
+        heading: 'Bird',
+        rows: [
+          ['Name', b.name],
+          ['Species', b.species ?? ''],
+          ['Scientific name', b.scientific_name ?? ''],
+          ['Sex', b.sex === 'M' ? 'Male' : b.sex === 'F' ? 'Female' : 'Unknown'],
+          ['Ring / microchip', b.ring_microchip ?? ''],
+          ['Hatched', [b.hatch_date, b.hatch_year].filter(Boolean).join(' / ')],
+          ['Arrived', [b.arrival_date, b.age_at_arrival && `aged ${b.age_at_arrival}`, b.supplier && `from ${b.supplier}`].filter(Boolean).join(', ')],
+        ],
+      },
+      {
+        heading: 'Where and how it is kept',
+        rows: [
+          ['Aviary', aviaryLabel(b.aviary_id) + (aviaryOf(b.aviary_id)?.breeding ? ' (breeding aviary)' : '')],
+          ['Team', team],
+          ['Usual food', [b.default_portion, b.default_food].filter(Boolean).join(' ')],
+          ['Feeds a day', String(b.feeds_per_day ?? 1)],
+          ['Fast days', fast],
+          ['Target weight', target],
+          ['Care notes', b.care_notes ?? ''],
+          ['Enrichment', b.enrichment ?? ''],
+        ],
+      },
+      {
+        heading: 'Health',
+        rows: [
+          ['Last health check', lastCheck ? `${ukDate(lastCheck.checked_on)}${lastCheck.condition_score != null ? `, condition ${scoreText(lastCheck.condition_score)}` : ''}${lastCheck.weight_g != null ? `, ${weightText(lastCheck.weight_g, b.weight_unit)}` : ''}` : 'None yet'],
+          ['Open health issues', openIssues.map((i) => `${i.title} (since ${ukDate(i.started_on)})`).join('; ') || 'None'],
+          ['Current medication', currentMeds.map((m) => `${m.name_dose}, ${m.amount}`).join('; ') || 'None'],
+          ['Vaccinations', b.vaccinations ?? ''],
+          ['Other notes', b.record_notes ?? ''],
+        ],
+      },
+    ];
+    const recordSig = JSON.stringify(sections);
+    await put(`record:${b.id}`, recordSig, dir, `${b.name} - bird record.pdf`, () => birdRecordPdf(`${b.name}: bird record`, sections, 'National Centre for Birds of Prey'), 'application/pdf');
+
+    // Health and vet log: issues, updates, medication courses and every dose
+    const myIssues = (issues ?? []).filter((i) => i.bird_id === b.id);
+    const titleOf = (id: string | null) => myIssues.find((i) => i.id === id)?.title ?? '';
+    const events = [
+      ...myIssues.map((i) => ({ date: i.started_on, time: hhmm(i.opened_at), kind: 'Health issue', detail: i.title, action: '', by: staff(i.opened_by) })),
+      ...myIssues.filter((i) => i.closed_at).map((i) => ({ date: londonDay(i.closed_at), time: hhmm(i.closed_at), kind: 'Issue closed', detail: i.title, action: i.outcome ?? '', by: staff(i.closed_by) })),
+      ...(entries ?? [])
+        .filter((e) => e.bird_id === b.id)
+        .map((e) => ({ date: e.log_date, time: hhmm(e.logged_at), kind: 'Health update', detail: [titleOf(e.issue_id), e.notes, e.photo_paths?.length ? `${e.photo_paths.length} photo(s)` : ''].filter(Boolean).join(': '), action: e.action ?? '', by: staff(e.staff_id) })),
+      ...(meds ?? [])
+        .filter((m) => m.bird_id === b.id)
+        .flatMap((m) => [
+          { date: m.start_date, time: '', kind: 'Medication started', detail: `${m.name_dose}, ${m.amount}, ${m.times_per_day}x a day${m.every_days > 1 ? ` every ${m.every_days} days` : ''}${m.end_date ? ` until ${ukDate(m.end_date)}` : ''}${m.notes ? ` (${m.notes})` : ''}`, action: m.prescribed_by ? `Prescribed by ${m.prescribed_by}` : '', by: staff(m.created_by) },
+          ...(m.stopped_at ? [{ date: londonDay(m.stopped_at), time: hhmm(m.stopped_at), kind: 'Medication stopped', detail: m.name_dose, action: m.stop_reason ?? '', by: staff(m.stopped_by) }] : []),
+        ]),
+      ...(doses ?? [])
+        .filter((d) => d.bird_id === b.id)
+        .map((d) => ({ date: d.dose_date, time: hhmm(d.logged_at), kind: 'Dose given', detail: [(meds ?? []).find((m) => m.id === d.medication_id)?.name_dose, d.amount].filter(Boolean).join(', '), action: d.notes ?? '', by: staff(d.staff_id) })),
+    ];
+    if (events.length) {
+      const log = healthLogCsv(b.name, events);
+      await put(`healthlog:${b.id}`, log, dir, 'Health and vet log.csv', () => log, 'text/csv');
+    }
+
+    // Health checks: one PDF each, sent again if it's ticked as added to ZIMS later
+    for (const c of (checks ?? []).filter((x) => x.bird_id === b.id)) {
+      if (stop()) break;
+      const input: CheckupForPdf = {
         checked_on: c.checked_on,
-        bird,
-        aviary: aviaryLabel(bird.aviary_id),
+        bird: { name: b.name, species: b.species, sex: b.sex },
+        aviary: aviaryLabel(b.aviary_id),
         staff: staff(c.staff_id),
         done_with: c.done_with,
         ring_seen: c.ring_seen,
@@ -417,88 +511,45 @@ async function run(): Promise<{ copied: number; skipped: number; more: boolean }
         checks: c.checks ?? {},
         notes: c.notes,
         zims: !!c.zims_at,
-      },
-      'National Centre for Birds of Prey',
-    );
-    await put(key, ['Birds', bird.name, 'Health checks'], `${c.checked_on} health check.pdf`, pdf, 'application/pdf');
-    await db.from('onedrive_copied').upsert({ key: `${key}:state`, hash: stamp });
-    copiedHash.set(`${key}:state`, stamp);
+      };
+      await put(`checkup:${c.id}`, JSON.stringify(input), [...dir, 'Health checks'], `${c.checked_on} health check.pdf`, () => checkupPdf(input, 'National Centre for Birds of Prey'), 'application/pdf');
+    }
   }
 
-  const today = londonToday();
-  const active = [...(birds ?? [])].filter((b) => b.status === 'active').sort((x, y) => (x.route_order ?? 1e9) - (y.route_order ?? 1e9));
-
-  // 2) A folder for every bird (made once; a renamed bird gets a folder under its new name)
+  // 3) Photos into each bird's Photos folder: its own photo, health photos, prescriptions (copied once)
+  const photos: { key: string; bucket: string; path: string; dir: string[]; file: string }[] = [];
   for (const b of active) {
-    if (timeUp()) {
-      more = true;
-      break;
-    }
-    const key = `folder:${b.id}`;
-    if (copiedHash.get(key) === b.name) continue;
-    await folder(['Birds', b.name, 'Weekly records']);
-    await folder(['Birds', b.name, 'Health checks']);
-    await db.from('onedrive_copied').upsert({ key, hash: b.name });
-    copiedHash.set(key, b.name);
+    const dir = ['Birds', b.name, 'Photos'];
+    if (b.photo_path) photos.push({ key: `photo:${b.photo_path}`, bucket: 'bird-photos', path: b.photo_path, dir, file: `${b.name} ${b.photo_path.split('/').pop()}` });
+    for (const e of (entries ?? []).filter((x) => x.bird_id === b.id))
+      (e.photo_paths ?? []).forEach((path: string, n: number) => {
+        const title = (issues ?? []).find((i) => i.id === e.issue_id)?.title ?? 'Health';
+        photos.push({ key: `photo:${path}`, bucket: 'health-photos', path, dir: [...dir, `Health - ${title}`], file: `${e.log_date} ${n + 1}.${path.split('.').pop() ?? 'jpg'}` });
+      });
+    for (const m of (meds ?? []).filter((x) => x.bird_id === b.id))
+      (m.prescription_paths ?? []).forEach((path: string, n: number) =>
+        photos.push({ key: `photo:${path}`, bucket: 'health-photos', path, dir: [...dir, 'Prescriptions'], file: `${m.start_date} ${m.name_dose} ${n + 1}.${path.split('.').pop() ?? 'jpg'}` }),
+      );
+  }
+  for (const ph of photos) {
+    if (copiedHash.has(ph.key)) continue;
+    if (stop()) break;
+    await put(ph.key, ph.path, ph.dir, ph.file, async () => {
+      const { data, error } = await db.storage.from(ph.bucket).download(ph.path);
+      if (error || !data) throw new Error(`Reading photo ${ph.path}: ${error?.message ?? 'missing'}`);
+      return new Uint8Array(await data.arrayBuffer());
+    }, 'image/jpeg');
   }
 
-  // 3) Weekly records for each bird, and the weekly chart, for this week and last week
-  for (const monday of [mondayOf(addDays(today, -7)), mondayOf(today)]) {
-    if (timeUp()) {
-      more = true;
-      break;
-    }
-    const { data: weekLogs } = await db
-      .from('feed_logs')
-      .select('bird_id, log_date, logged_at, status, food_type, amount, weight_g, notes, flight_type, staff_id, more_due')
-      .is('voided_at', null)
-      .gte('log_date', monday)
-      .lte('log_date', addDays(monday, 6));
-    const logs = (weekLogs ?? []) as WeekLog[];
-    const chartBirds = active.filter((b) => b.team !== 'aviary').map((b) => ({ id: b.id, name: b.name, weight_unit: b.weight_unit, aviary: aviaryLabel(b.aviary_id) }));
-    await put(`weekchart:${monday}`, ['Weekly charts'], `${monday} weights and feeding.csv`, weeklyChartCsv(monday, chartBirds, logs), 'text/csv');
-    for (const b of active) {
-      const mine = logs.filter((l) => l.bird_id === b.id);
-      if (mine.length === 0) continue; // nothing logged that week: no file
-      if (timeUp()) {
-        more = true;
-        break;
-      }
-      await put(`birdweek:${monday}:${b.id}`, ['Birds', b.name, 'Weekly records'], `${monday} week.csv`, birdWeekCsv(b, aviaryLabel(b.aviary_id), monday, mine, staff), 'text/csv');
-    }
-  }
-
-  // 4) Feed sheets for this week and last week, one per barn (aviary and resting birds)
-  const sheetBirds = (birds ?? []).filter((b) => b.status === 'active' && (b.team === 'aviary' || b.team === 'resting'));
-  const barns = new Map<string, SheetBird[]>();
-  for (const b of [...sheetBirds].sort((x, y) => (x.route_order ?? 1e9) - (y.route_order ?? 1e9))) {
-    const barn = (aviaries ?? []).find((a) => a.id === b.aviary_id)?.name ?? 'No aviary';
-    barns.set(barn, [...(barns.get(barn) ?? []), b]);
-  }
-  for (const monday of [mondayOf(addDays(today, -7)), mondayOf(today)]) {
-    const { data: logs } = await db
-      .from('feed_logs')
-      .select('bird_id, log_date, status, food_type, amount')
-      .in('status', ['fed', 'left', 'fasting'])
-      .is('voided_at', null)
-      .gte('log_date', monday)
-      .lte('log_date', addDays(monday, 6));
-    for (const [barn, list] of barns) {
-      if (timeUp()) {
-        more = true;
-        break;
-      }
-      await put(`feedsheet:${monday}:${barn}`, ['Feed sheets'], `${monday} ${barn}.csv`, feedSheetCsv(barn, monday, list, aviaryLabel, logs ?? []), 'text/csv');
-    }
-  }
-
-  // 5) This year's breeding records (and last year's in January, to finish it off)
+  // 4) This year's breeding records (and last year's in January, to finish it off)
   const year = Number(today.slice(0, 4));
   for (const y of today.slice(5, 7) === '01' ? [year - 1, year] : [year]) {
-    const { data: entries } = await db.from('breeding_logs').select('*').is('voided_at', null).gte('log_date', `${y}-01-01`).lte('log_date', `${y}-12-31`).order('logged_at');
-    if (!entries?.length) continue;
-    const rows = entries.map((e) => ({ log_date: e.log_date, aviary: aviaryLabel(e.aviary_id), kind: e.kind, count: e.count, notes: e.notes, staff: staff(e.staff_id) }));
-    await put(`breeding:${y}`, ['Breeding'], `Breeding ${y}.csv`, breedingCsv(y, rows), 'text/csv');
+    if (stop()) break;
+    const { data: breeding } = await db.from('breeding_logs').select('*').is('voided_at', null).gte('log_date', `${y}-01-01`).lte('log_date', `${y}-12-31`).order('logged_at');
+    if (!breeding?.length) continue;
+    const rows = breeding.map((e) => ({ log_date: e.log_date, aviary: aviaryLabel(e.aviary_id), kind: e.kind, count: e.count, notes: e.notes, staff: staff(e.staff_id) }));
+    const sheet = breedingCsv(y, rows);
+    await put(`breeding:${y}`, sheet, ['Breeding'], `Breeding ${y}.csv`, () => sheet, 'text/csv');
   }
 
   await db.from('onedrive_settings').update({ last_run_at: new Date().toISOString(), last_copied: copied, last_error: null }).eq('id', 1);
