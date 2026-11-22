@@ -54,7 +54,11 @@ export function OneDriveAdmin() {
     const { data, error } = await supabase.functions.invoke('onedrive-sync', { body: {} });
     setBusy(null);
     if (error) setMsg(`Copy failed. ${data?.error ?? 'See the error below.'}`);
-    else setMsg(`Done: ${data.copied} file${data.copied === 1 ? '' : 's'} copied, ${data.skipped} already up to date.`);
+    else
+      setMsg(
+        `Done: ${data.copied} file${data.copied === 1 ? '' : 's'} copied, ${data.skipped} already up to date.` +
+          (data.more ? ' There is more to copy: it carries on by itself every half hour, or tap Copy now again.' : ''),
+      );
     await load();
   }
 
@@ -63,8 +67,9 @@ export function OneDriveAdmin() {
     <div className="onedrive-page">
       <h1 className="page-title">OneDrive copying</h1>
       <p className="muted">
-        Health checks (a PDF each, like the paper form), weekly feed sheets and breeding records are copied into one OneDrive folder every half hour. Staff
-        and inspectors can find them there, and they stay yours even without the app.
+        Every half hour the app copies its records into one OneDrive folder: a folder for each bird with its weekly records and health checks (a PDF each,
+        like the paper form), the weekly weight and feeding chart, feed sheets for each barn, and breeding records. Staff and inspectors can find them
+        there, and they stay yours even without the app.
       </p>
       {msg && <p className={msg.startsWith('Not') || msg.startsWith('Copy failed') || msg.startsWith("Couldn't") ? 'warn' : 'ok-note'}>{msg}</p>}
 

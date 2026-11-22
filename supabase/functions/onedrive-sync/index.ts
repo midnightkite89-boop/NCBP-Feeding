@@ -1,11 +1,16 @@
 // onedrive-sync: copies the app's records into the centre's OneDrive folder.
 //
-//   Health checks/<aviary>/<date> <bird>.pdf   one per check, laid out like NCBP's paper form
-//                                              (sent again if it's later ticked as added to ZIMS)
-//   Feed sheets/<Monday> <barn>.csv            this week and last week, fed and left per aviary
+//   Birds/<bird>/                              a folder for every bird, like the SMJ database
+//     Weekly records/<Monday> week.csv          each day: weight, fed, food left, flown, notes, who
+//     Health checks/<date> health check.pdf     one per check, laid out like NCBP's paper form
+//                                               (sent again if it's later ticked as added to ZIMS)
+//   Weekly charts/<Monday> weights and feeding.csv   flying and resting birds, weight and food each day
+//   Feed sheets/<Monday> <barn>.csv            fed and left per aviary, for each barn
 //   Breeding/Breeding <year>.csv               every nest check, egg, hatching, fledging, loss, note
 //
-// Files are only sent when they've changed. Runs every 30 minutes (pg_cron) and from "Copy now".
+// Weekly files cover this week and last week. Files are only sent when they've changed, and a run
+// stops after about 100 seconds and carries on next time (the first run has a lot to make).
+// Runs every 30 minutes (pg_cron) and from "Copy now".
 // Deploy with "Verify JWT" OFF; it checks the caller itself (the schedule's key, or a signed-in user).
 // Secrets: MS_CLIENT_ID, MS_CLIENT_SECRET, ONEDRIVE_SYNC_KEY. SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are provided.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
@@ -211,6 +216,75 @@ export function feedSheetCsv(barn: string, monday: string, birds: SheetBird[], a
   return csv(rows);
 }
 
+/** Grams in the bird's own unit, e.g. "1150 g" or "2 lb 8.5 oz" */
+export function weightText(grams: number, unit: string | null): string {
+  if (unit !== 'lb_oz') return `${Math.round(grams * 10) / 10} g`;
+  const totalOz = Math.round((grams / 28.349523125) * 100) / 100;
+  const lb = Math.floor(totalOz / 16);
+  const oz = Math.round((totalOz - lb * 16) * 100) / 100;
+  return lb > 0 ? `${lb} lb ${oz} oz` : `${oz} oz`;
+}
+
+export interface WeekLog extends SheetLog {
+  weight_g: number | null;
+  notes: string | null;
+  flight_type: string | null;
+  logged_at: string;
+  staff_id: string;
+  more_due?: boolean | null;
+}
+const FLIGHT: Record<string, string> = { display: 'Demonstration', experience: 'Experience', training: 'Training', school: 'School', evening: 'Owl evening', other: 'Other' };
+const weekDays = (monday: string) => Array.from({ length: 7 }, (_, i) => new Date(Date.parse(`${monday}T12:00:00Z`) + i * 864e5).toISOString().slice(0, 10));
+const hhmm = (iso: string) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+
+/** One bird's week, a row a day: the record that used to go on the paper weight / feed chart */
+export function birdWeekCsv(bird: { name: string; species: string | null; weight_unit: string | null }, aviary: string, monday: string, logs: WeekLog[], staff: (id: string) => string): string {
+  const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const rows: string[][] = [
+    [`${bird.name} (${bird.species ?? ''}), ${aviary}: week commencing ${ukDate(monday)}`],
+    ['Day', 'Date', 'Weight', 'Fed', 'Food left', 'Fasting', 'Flown', 'Notes', 'Logged by'],
+  ];
+  weekDays(monday).forEach((d, i) => {
+    const day = logs.filter((l) => l.log_date === d).sort((a, b) => a.logged_at.localeCompare(b.logged_at));
+    rows.push([
+      names[i],
+      ukDate(d),
+      day.filter((l) => l.weight_g != null).map((l) => weightText(l.weight_g!, bird.weight_unit)).join(' / '),
+      sumFeeds(day.filter((l) => l.status === 'fed')),
+      sumFeeds(day.filter((l) => l.status === 'left')),
+      day.some((l) => l.status === 'fasting') ? 'Yes' : '',
+      day.filter((l) => l.status === 'flown').map((l) => `${hhmm(l.logged_at)} ${FLIGHT[l.flight_type ?? ''] ?? 'Flown'}`).join(', '),
+      day.map((l) => l.notes).filter(Boolean).join(' | '),
+      [...new Set(day.map((l) => staff(l.staff_id)).filter(Boolean))].join(', '),
+    ]);
+  });
+  return csv(rows);
+}
+
+/** The weekly chart: flying and resting birds down the side, weight and food for each day */
+export function weeklyChartCsv(monday: string, birds: { id: string; name: string; weight_unit: string | null; aviary: string }[], logs: WeekLog[]): string {
+  const days = weekDays(monday);
+  const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const rows: string[][] = [
+    [`Weights and feeding, week commencing ${ukDate(monday)}`],
+    ['Bird', 'Aviary', ...days.flatMap((d, i) => [`${names[i]} ${ukDate(d).slice(0, 5)} weight`, 'food'])],
+  ];
+  for (const b of birds) {
+    const mine = logs.filter((l) => l.bird_id === b.id);
+    rows.push([
+      b.name,
+      b.aviary,
+      ...days.flatMap((d) => {
+        const day = mine.filter((l) => l.log_date === d);
+        const w = day.filter((l) => l.weight_g != null).map((l) => weightText(l.weight_g!, b.weight_unit)).join(' / ');
+        const fed = sumFeeds(day.filter((l) => l.status === 'fed'));
+        return [w, fed || (day.some((l) => l.status === 'fasting') ? 'Fast' : '')];
+      }),
+    ]);
+  }
+  return csv(rows);
+}
+
 const KIND: Record<string, string> = { nest_check: 'Nest check', egg: 'Eggs laid', hatched: 'Hatched', fledged: 'Fledged', lost: 'Lost', note: 'Note' };
 export function breedingCsv(year: number, entries: { log_date: string; aviary: string; kind: string; count: number | null; notes: string | null; staff: string }[]): string {
   return csv([
@@ -235,7 +309,10 @@ const londonToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/L
 const addDays = (d: string, n: number) => new Date(Date.parse(`${d}T12:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 const mondayOf = (d: string) => addDays(d, -((new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7));
 
-async function run(): Promise<{ copied: number; skipped: number }> {
+async function run(): Promise<{ copied: number; skipped: number; more: boolean }> {
+  const started = Date.now();
+  const timeUp = () => Date.now() - started > 100_000;
+  let more = false;
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data: settings } = await db.from('onedrive_settings').select('*').eq('id', 1).single();
   const { data: tok } = await db.from('onedrive_tokens').select('refresh_token').eq('id', 1).maybeSingle();
@@ -304,7 +381,7 @@ async function run(): Promise<{ copied: number; skipped: number }> {
   }
 
   const [{ data: birds }, { data: aviaries }, { data: profiles }] = await Promise.all([
-    db.from('birds').select('id, name, species, sex, team, aviary_id, route_order, status'),
+    db.from('birds').select('id, name, species, sex, team, aviary_id, route_order, status, weight_unit'),
     db.from('aviaries').select('id, name, number'),
     db.from('profiles').select('id, display_name'),
   ]);
@@ -323,7 +400,10 @@ async function run(): Promise<{ copied: number; skipped: number }> {
     const key = `checkup:${c.id}`;
     const stamp = `${c.zims_at ? 'zims' : ''}`;
     if (copiedHash.has(key) && copiedHash.get(`${key}:state`) === stamp) continue;
-    if (pdfs++ >= MAX_PDFS) break;
+    if (pdfs++ >= MAX_PDFS || timeUp()) {
+      more = true;
+      break;
+    }
     const pdf = await checkupPdf(
       {
         checked_on: c.checked_on,
@@ -340,13 +420,55 @@ async function run(): Promise<{ copied: number; skipped: number }> {
       },
       'National Centre for Birds of Prey',
     );
-    await put(key, ['Health checks', aviaryLabel(bird.aviary_id)], `${c.checked_on} ${bird.name}.pdf`, pdf, 'application/pdf');
+    await put(key, ['Birds', bird.name, 'Health checks'], `${c.checked_on} health check.pdf`, pdf, 'application/pdf');
     await db.from('onedrive_copied').upsert({ key: `${key}:state`, hash: stamp });
     copiedHash.set(`${key}:state`, stamp);
   }
 
-  // 2) Feed sheets for this week and last week, one per barn (aviary and resting birds)
   const today = londonToday();
+  const active = [...(birds ?? [])].filter((b) => b.status === 'active').sort((x, y) => (x.route_order ?? 1e9) - (y.route_order ?? 1e9));
+
+  // 2) A folder for every bird (made once; a renamed bird gets a folder under its new name)
+  for (const b of active) {
+    if (timeUp()) {
+      more = true;
+      break;
+    }
+    const key = `folder:${b.id}`;
+    if (copiedHash.get(key) === b.name) continue;
+    await folder(['Birds', b.name, 'Weekly records']);
+    await folder(['Birds', b.name, 'Health checks']);
+    await db.from('onedrive_copied').upsert({ key, hash: b.name });
+    copiedHash.set(key, b.name);
+  }
+
+  // 3) Weekly records for each bird, and the weekly chart, for this week and last week
+  for (const monday of [mondayOf(addDays(today, -7)), mondayOf(today)]) {
+    if (timeUp()) {
+      more = true;
+      break;
+    }
+    const { data: weekLogs } = await db
+      .from('feed_logs')
+      .select('bird_id, log_date, logged_at, status, food_type, amount, weight_g, notes, flight_type, staff_id, more_due')
+      .is('voided_at', null)
+      .gte('log_date', monday)
+      .lte('log_date', addDays(monday, 6));
+    const logs = (weekLogs ?? []) as WeekLog[];
+    const chartBirds = active.filter((b) => b.team !== 'aviary').map((b) => ({ id: b.id, name: b.name, weight_unit: b.weight_unit, aviary: aviaryLabel(b.aviary_id) }));
+    await put(`weekchart:${monday}`, ['Weekly charts'], `${monday} weights and feeding.csv`, weeklyChartCsv(monday, chartBirds, logs), 'text/csv');
+    for (const b of active) {
+      const mine = logs.filter((l) => l.bird_id === b.id);
+      if (mine.length === 0) continue; // nothing logged that week: no file
+      if (timeUp()) {
+        more = true;
+        break;
+      }
+      await put(`birdweek:${monday}:${b.id}`, ['Birds', b.name, 'Weekly records'], `${monday} week.csv`, birdWeekCsv(b, aviaryLabel(b.aviary_id), monday, mine, staff), 'text/csv');
+    }
+  }
+
+  // 4) Feed sheets for this week and last week, one per barn (aviary and resting birds)
   const sheetBirds = (birds ?? []).filter((b) => b.status === 'active' && (b.team === 'aviary' || b.team === 'resting'));
   const barns = new Map<string, SheetBird[]>();
   for (const b of [...sheetBirds].sort((x, y) => (x.route_order ?? 1e9) - (y.route_order ?? 1e9))) {
@@ -361,11 +483,16 @@ async function run(): Promise<{ copied: number; skipped: number }> {
       .is('voided_at', null)
       .gte('log_date', monday)
       .lte('log_date', addDays(monday, 6));
-    for (const [barn, list] of barns)
+    for (const [barn, list] of barns) {
+      if (timeUp()) {
+        more = true;
+        break;
+      }
       await put(`feedsheet:${monday}:${barn}`, ['Feed sheets'], `${monday} ${barn}.csv`, feedSheetCsv(barn, monday, list, aviaryLabel, logs ?? []), 'text/csv');
+    }
   }
 
-  // 3) This year's breeding records (and last year's in January, to finish it off)
+  // 5) This year's breeding records (and last year's in January, to finish it off)
   const year = Number(today.slice(0, 4));
   for (const y of today.slice(5, 7) === '01' ? [year - 1, year] : [year]) {
     const { data: entries } = await db.from('breeding_logs').select('*').is('voided_at', null).gte('log_date', `${y}-01-01`).lte('log_date', `${y}-12-31`).order('logged_at');
@@ -375,7 +502,7 @@ async function run(): Promise<{ copied: number; skipped: number }> {
   }
 
   await db.from('onedrive_settings').update({ last_run_at: new Date().toISOString(), last_copied: copied, last_error: null }).eq('id', 1);
-  return { copied, skipped };
+  return { copied, skipped, more };
 }
 
 if (typeof Deno !== 'undefined')
