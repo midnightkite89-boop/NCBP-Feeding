@@ -28,6 +28,9 @@ const stops = feedStops(birds);
 check('flying birds sharing an aviary stay separate', stops[0].length === 1 && stops[1].length === 1);
 check('aviary birds sharing an aviary are one stop', stops[2].length === 3, stops.map((s) => s.length).join(','));
 check('a lone aviary bird is its own stop', stops[3].length === 1);
+// Kieran: kites resting for the winter in one aviary are one stop; one still flying stays separate
+const kites = feedStops([bird('Pyrite', 'fg1', 'resting', 'Chick', '2'), bird('Cello', 'fg1', 'resting', 'Chick', '2'), bird('Beryl', 'fg1', 'flying', 'Chick', '2'), bird('Garnet', 'fg1', 'resting', 'Chick', '2')]);
+check('resting birds sharing an aviary are one stop, even with a flying bird between', kites[0].length === 3 && kites[1].length === 1, kites.map((s) => s.length).join(','));
 const entries = (s: any[]) => s.map((b) => quickFeedEntry(b, birdStatus(b, [], '2026-11-10')));
 check('three eagles on 11 chicks = 33 Chick', sumFeeds(entries(stops[2])) === '33 Chick', sumFeeds(entries(stops[2])));
 check('condor pair = 40 Chick, 1 Rabbit', sumFeeds(entries(stops[4])) === '40 Chick, 1 Rabbit', sumFeeds(entries(stops[4])));
