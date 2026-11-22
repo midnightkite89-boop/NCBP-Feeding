@@ -10,7 +10,7 @@
 //
 // Weekly records cover this week and last week. Files are only sent when they've changed, and a run
 // stops after about 100 seconds and carries on next time (the first run has a lot to make).
-// Runs every 30 minutes (pg_cron) and from "Copy now".
+// Runs once a night (pg_cron) and from "Copy now".
 // Deploy with "Verify JWT" OFF; it checks the caller itself (the schedule's key, or a signed-in user).
 // Secrets: MS_CLIENT_ID, MS_CLIENT_SECRET, ONEDRIVE_SYNC_KEY. SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are provided.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';

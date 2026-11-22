@@ -23,7 +23,7 @@ export function OneDriveAdmin() {
   const [folder, setFolder] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(
-    params.get('connected') ? 'Connected. Copying will start within half an hour, or tap Copy now.' : params.get('error') ? `Not connected: ${params.get('error')}` : null,
+    params.get('connected') ? 'Connected. Tap Copy now to make the first copy (tap again until it says it has finished); after that it copies every night.' : params.get('error') ? `Not connected: ${params.get('error')}` : null,
   );
 
   const load = useCallback(async () => {
@@ -57,7 +57,7 @@ export function OneDriveAdmin() {
     else
       setMsg(
         `Done: ${data.copied} file${data.copied === 1 ? '' : 's'} copied, ${data.skipped} already up to date.` +
-          (data.more ? ' There is more to copy: it carries on by itself every half hour, or tap Copy now again.' : ''),
+          (data.more ? ' There is more to copy: tap Copy now again (or it carries on tonight).' : ' Everything is up to date.'),
       );
     await load();
   }
@@ -67,7 +67,7 @@ export function OneDriveAdmin() {
     <div className="onedrive-page">
       <h1 className="page-title">OneDrive copying</h1>
       <p className="muted">
-        Every half hour the app copies its records into one OneDrive folder. Each bird has its own folder with its bird record, a health and vet
+        Every night the app copies its records into one OneDrive folder. Each bird has its own folder with its bird record, a health and vet
         log (issues, medication, every dose), its health checks (a PDF each, like the paper form) and its photos. Alongside them: one weekly
         records sheet for every bird (weight when weighed, fed, food left) and the breeding records. Staff and inspectors can find them there, and
         they stay yours even without the app.
