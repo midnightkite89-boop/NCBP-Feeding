@@ -52,13 +52,13 @@ where p.id = (select id from auth.users where email = v.email);
 A folder per bird (record, health and vet log, health checks, photos), one weekly records sheet and breeding records are copied into a OneDrive folder once a night.
 Microsoft app registration is done (client ID `ead7c9dc-355a-42b4-a286-2ba20efcbb90`, redirect `https://srfkqpnqtkbgcsygiowa.supabase.co/functions/v1/onedrive-auth`).
 
-- [ ] **SQL Editor:** paste all of `supabase/migrations/027_onedrive.sql` → **Run**.
-- [ ] **Edge Functions → Secrets → Add new secret**, four times:
+- [x] **SQL Editor:** paste all of `supabase/migrations/027_onedrive.sql` → **Run**.
+- [x] **Edge Functions → Secrets → Add new secret**, four times:
   - `MS_CLIENT_ID` = `ead7c9dc-355a-42b4-a286-2ba20efcbb90`
   - `MS_CLIENT_SECRET` = the secret **Value** you copied from Azure (Certificates & secrets)
   - `APP_URL` = `https://ncbp-app.netlify.app`
   - `ONEDRIVE_SYNC_KEY` = the key on line 4 of `../ncbp/ncbp-onedrive-schedule.sql` (after `--`)
-- [ ] **Edge Functions → Deploy a new function → Via editor**, name `onedrive-auth`: replace everything with `supabase/functions/onedrive-auth/index.ts` → **Deploy**. Then open the function's **Details** and turn **off** "Verify JWT with legacy secret" / "Enforce JWT verification" → Save.
-- [ ] Same again for `onedrive-sync` with `supabase/functions/onedrive-sync/index.ts`, and turn Verify JWT **off** too.
-- [ ] **SQL Editor:** paste all of `../ncbp/ncbp-onedrive-schedule.sql` → **Run** (copies once a night).
+- [x] **Edge Functions → Deploy a new function → Via editor**, name `onedrive-auth`: replace everything with `supabase/functions/onedrive-auth/index.ts` → **Deploy**. Then open the function's **Details** and turn **off** "Verify JWT with legacy secret" / "Enforce JWT verification" → Save.
+- [x] Same again for `onedrive-sync` with `supabase/functions/onedrive-sync/index.ts`, and turn Verify JWT **off** too.
+- [x] **SQL Editor:** paste all of `../ncbp/ncbp-onedrive-schedule.sql` → **Run** (copies once a night).
 - [ ] **In the app** (after Claude pushes): More → OneDrive copying → check the folder name → **Connect OneDrive**. The OneDrive's owner signs in and taps **Allow**. Then **Copy now**, again until it says everything is up to date (the first copy is big).
