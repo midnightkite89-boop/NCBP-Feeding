@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { has } from '../centre';
 import { BirdPhoto } from '../components/BirdPhoto';
 import { nudgeDriveSync } from '../drive';
 import { WeightInput } from '../components/WeightInput';
@@ -44,7 +45,12 @@ function BirdForm({ existing }: { existing: Bird | undefined }) {
   const navigate = useNavigate();
   const { aviaries, refresh, careSettings, birds } = useStore();
   const isNew = !existing;
-  const [form, setForm] = useState<Omit<Bird, 'id'>>({ ...BLANK, ...existing });
+  // A chick from the breeding page arrives with its aviary, species and hatch date filled in
+  const [params] = useSearchParams();
+  const fromHatch: Partial<Bird> = params.get('born')
+    ? { species: params.get('species'), aviary_id: params.get('aviary'), came_on: params.get('born'), came_kind: 'born', team: 'aviary', name: params.get('name') ?? '' }
+    : {};
+  const [form, setForm] = useState<Omit<Bird, 'id'>>({ ...BLANK, ...fromHatch, ...existing });
   const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -70,7 +76,8 @@ function BirdForm({ existing }: { existing: Bird | undefined }) {
         return setError(`Photo upload failed: ${up.error.message}`);
       }
     }
-    const row = { ...form, name: form.name.trim(), default_food: form.default_food?.trim() || null, photo_path };
+    const left = form.left_kind && form.left_on ? { left_kind: form.left_kind, left_on: form.left_on, status: 'archived' as const } : { left_kind: null, left_on: null, left_note: null };
+    const row = { ...form, ...left, name: form.name.trim(), default_food: form.default_food?.trim() || null, photo_path };
     if (photo) nudgeDriveSync();
     const res = isNew ? await supabase.from('birds').insert({ id: birdId, ...row }) : await supabase.from('birds').update(row).eq('id', birdId);
     setBusy(false);
@@ -81,7 +88,9 @@ function BirdForm({ existing }: { existing: Bird | undefined }) {
         await supabase.from('birds').update({ route_order: c.route_order }).eq('id', c.id);
     }
     await refresh();
-    navigate('/admin/birds');
+    // Chicks are added from the breeding page: go back there for the next one
+    if (fromHatch.came_kind) navigate(-1);
+    else navigate('/admin/birds');
   }
 
   return (
@@ -221,10 +230,89 @@ function BirdForm({ existing }: { existing: Bird | undefined }) {
         <span>Standing care notes</span>
         <textarea rows={3} value={form.care_notes ?? ''} onChange={(e) => set('care_notes', text(e.target.value))} />
       </label>
-      <label className="field">
-        <span>Google Drive folder link (optional)</span>
-        <input type="url" value={form.drive_folder_url ?? ''} onChange={(e) => set('drive_folder_url', text(e.target.value))} placeholder="https://drive.google.com/drive/folders/…" />
-      </label>
+      {has('driveSync') && (
+        <label className="field">
+          <span>Google Drive folder link (optional)</span>
+          <input type="url" value={form.drive_folder_url ?? ''} onChange={(e) => set('drive_folder_url', text(e.target.value))} placeholder="https://drive.google.com/drive/folders/…" />
+        </label>
+      )}
+
+      <fieldset className="bird-records">
+        <legend>Records (ZIMS and the stock list)</legend>
+        <label className="field">
+          <span>Scientific name</span>
+          <input value={form.scientific_name ?? ''} onChange={(e) => set('scientific_name', text(e.target.value))} placeholder="e.g. Polemaetus bellicosus" />
+        </label>
+        <div className="field-row">
+          <label className="field">
+            <span>Ring / microchip</span>
+            <input value={form.ring_microchip ?? ''} onChange={(e) => set('ring_microchip', text(e.target.value))} />
+          </label>
+          <label className="field">
+            <span>ZIMS ID</span>
+            <input value={form.zims_id ?? ''} onChange={(e) => set('zims_id', text(e.target.value))} placeholder="Local ID or GAN" />
+          </label>
+        </div>
+
+        <div className="field">
+          <span>Came into the collection</span>
+          <div className="segmented" role="radiogroup" aria-label="How it came in">
+            {(
+              [
+                ['arrived', 'Arrived'],
+                ['born', 'Hatched here'],
+              ] as const
+            ).map(([value, label]) => (
+              <button type="button" key={value} role="radio" aria-checked={form.came_kind === value} className={form.came_kind === value ? 'on' : ''} onClick={() => set('came_kind', form.came_kind === value ? null : value)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="field-row">
+          <label className="field">
+            <span>Date</span>
+            <input type="date" value={form.came_on ?? ''} onChange={(e) => set('came_on', e.target.value || null)} />
+          </label>
+          {form.came_kind !== 'born' && (
+            <label className="field">
+              <span>From</span>
+              <input value={form.came_from ?? ''} onChange={(e) => set('came_from', text(e.target.value))} placeholder="Where it came from" />
+            </label>
+          )}
+        </div>
+        <small className="muted">Leave the date empty if it's been here a long time: it then counts as here all year on the stock list.</small>
+
+        <div className="field">
+          <span>Left the collection</span>
+          <div className="segmented" role="radiogroup" aria-label="How it left">
+            {(
+              [
+                ['died', 'Died'],
+                ['departed', 'Departed'],
+              ] as const
+            ).map(([value, label]) => (
+              <button type="button" key={value} role="radio" aria-checked={form.left_kind === value} className={form.left_kind === value ? 'on' : ''} onClick={() => set('left_kind', form.left_kind === value ? null : value)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {form.left_kind && (
+          <div className="field-row">
+            <label className="field">
+              <span>Date</span>
+              <input type="date" value={form.left_on ?? ''} onChange={(e) => set('left_on', e.target.value || null)} required />
+            </label>
+            <label className="field">
+              <span>{form.left_kind === 'died' ? 'Cause' : 'Where to'}</span>
+              <input value={form.left_note ?? ''} onChange={(e) => set('left_note', text(e.target.value))} />
+            </label>
+          </div>
+        )}
+        {form.left_kind && <small className="muted">Saving takes the bird off the rounds; its records are kept and it stays on this year's stock list.</small>}
+      </fieldset>
+
       <label className="check">
         <input type="checkbox" checked={form.status === 'archived'} onChange={(e) => set('status', e.target.checked ? 'archived' : 'active')} />
         <span>Archived (hidden from feeding round, history kept)</span>

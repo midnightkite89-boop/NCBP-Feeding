@@ -75,6 +75,16 @@ export interface Bird {
   feed_round?: number;
   /** flying = on the team, weighed daily; resting = time off at weight; aviary = not flown or weighed */
   team?: BirdTeam;
+  /** Into the collection: when, and whether it arrived or was born here (for the stock list) */
+  came_on?: string | null;
+  came_kind?: 'arrived' | 'born' | null;
+  came_from?: string | null;
+  /** Out of the collection: when, and whether it died or departed */
+  left_on?: string | null;
+  left_kind?: 'died' | 'departed' | null;
+  left_note?: string | null;
+  /** Local ID or GAN, to match ZIMS */
+  zims_id?: string | null;
   /** The bird's folder in the Google Drive database */
   drive_folder_url?: string | null;
   // AAL records (R1 / R2)

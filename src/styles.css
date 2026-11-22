@@ -1291,3 +1291,23 @@ html, body { background: var(--bg); }
 /* Round mode: sit just under the round's own header (End round, progress) */
 .undo-bar.no-tabs { top: calc(64px + env(safe-area-inset-top)); }
 .ok-note { padding: 8px 12px; border-radius: 12px; background: var(--fed-bg); color: var(--fed); font-weight: 600; }
+
+/* Stock list */
+.stock-warnings { margin: 8px 0; padding: 8px 12px 8px 28px; border-radius: 12px; background: var(--warn-bg); color: var(--warn); font-size: 0.95rem; }
+.stock-table { border-collapse: collapse; font-size: 0.92rem; min-width: 760px; width: 100%; background: var(--card); }
+.stock-table th, .stock-table td { border: 1px solid var(--hair-strong); padding: 6px 8px; text-align: center; vertical-align: middle; }
+.stock-table thead th { background: #0b7a3e; color: #fff; font-weight: 600; }
+.stock-table td:first-child, .stock-table th:first-child { text-align: left; }
+.stock-sci, .stock-sci .stock-input { font-style: italic; }
+.stock-input { width: 100%; min-width: 9em; border: 1px dashed var(--hair-strong); border-radius: 6px; padding: 4px 6px; font: inherit; background: transparent; color: var(--ink); text-align: inherit; }
+.stock-input.short { min-width: 3em; width: 4em; text-align: center; }
+.stock-table tfoot th { background: var(--card-2); }
+@media print {
+  .stock-page .print-only { display: block; }
+  .stock-print-title { font-size: 13pt; margin: 0 0 4mm; }
+  .stock-table { font-size: 8.5pt; min-width: 0; }
+  .stock-table thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .stock-input { border: 0; padding: 0; }
+}
+.bird-records { border: 1px solid var(--hair); border-radius: 16px; padding: 4px 14px 12px; margin: 16px 0; background: var(--card); }
+.bird-records legend { font-weight: 700; padding: 0 6px; }

@@ -7,6 +7,7 @@
 //     Photos/                                      the bird's photo, health photos, prescriptions
 //   Weekly records/<Monday> week.csv               every bird: weight (when weighed), fed and food left each day
 //   Breeding/Breeding <year>.csv                   every nest check, egg, hatching, fledging, loss, note
+//   Stock list/Stock list <year>.csv               the zoo standards stock list, kept up to date
 //
 // Weekly records cover this week and last week. Files are only sent when they've changed, and a run
 // stops after about 100 seconds and carries on next time (the first run has a lot to make).
@@ -286,6 +287,45 @@ export function breedingCsv(year: number, entries: { log_date: string; aviary: s
   ]);
 }
 
+/** The zoo standards stock list for a year (same sums as the app's Stock list page, src/stock.ts) */
+export function stockCsv(
+  year: number,
+  birds: { species: string | null; scientific_name: string | null; sex: string | null; status: string; came_on: string | null; came_kind: string | null; left_on: string | null; left_kind: string | null }[],
+  info: { species: string; scientific_name: string | null; iucn: string | null; hazard: string }[],
+): string {
+  const jan1 = `${year}-01-01`;
+  const dec31 = `${year}-12-31`;
+  type N = { m: number; f: number; u: number };
+  const z = (): N => ({ m: 0, f: 0, u: 0 });
+  const add = (n: N, sex: string | null) => (sex === 'M' ? n.m++ : sex === 'F' ? n.f++ : n.u++);
+  const fmt = (n: N) => `${n.m}.${n.f}.${n.u}`;
+  const inYear = (d: string | null) => !!d && d >= jan1 && d <= dec31;
+  const rows = new Map<string, { common: string; sci: string; start: N; arrived: N; born: N; died: N; departed: N; end: N }>();
+  for (const b of birds) {
+    if (!(b.status === 'active' || b.left_on)) continue;
+    const key = (b.species ?? '').trim().toLowerCase();
+    if (!key) continue;
+    const start = (!b.came_on || b.came_on < jan1) && (!b.left_on || b.left_on >= jan1);
+    const end = (!b.came_on || b.came_on <= dec31) && (!b.left_on || b.left_on > dec31);
+    if (!start && !end && !inYear(b.came_on) && !inYear(b.left_on)) continue;
+    const r = rows.get(key) ?? { common: b.species!.trim(), sci: b.scientific_name ?? '', start: z(), arrived: z(), born: z(), died: z(), departed: z(), end: z() };
+    rows.set(key, r);
+    if (start) add(r.start, b.sex);
+    if (inYear(b.came_on)) add(b.came_kind === 'born' ? r.born : r.arrived, b.sex);
+    if (inYear(b.left_on)) add(b.left_kind === 'died' ? r.died : r.departed, b.sex);
+    if (end) add(r.end, b.sex);
+  }
+  return csv([
+    ['Common name', 'Scientific name', 'IUCN Red List Status', 'Hazard Cat.', `Total on 1st Jan ${year}`, 'Arrived', 'Born', 'Died', 'Departed', `Group on 31 Dec ${year}`],
+    ...[...rows.entries()]
+      .sort((a, b) => a[1].common.localeCompare(b[1].common))
+      .map(([key, r]) => {
+        const i = info.find((x) => x.species === key);
+        return [r.common, i?.scientific_name || r.sci, i?.iucn ?? '', i?.hazard ?? (/condor/i.test(r.common) ? '1' : '2'), fmt(r.start), fmt(r.arrived), fmt(r.born), fmt(r.died), fmt(r.departed), fmt(r.end)];
+      }),
+  ]);
+}
+
 export async function hash(bytes: Uint8Array | string): Promise<string> {
   const data = typeof bytes === 'string' ? new TextEncoder().encode(bytes) : bytes;
   const digest = await crypto.subtle.digest('SHA-256', data as BufferSource);
@@ -550,6 +590,14 @@ async function run(): Promise<{ copied: number; skipped: number; more: boolean }
     const rows = breeding.map((e) => ({ log_date: e.log_date, aviary: aviaryLabel(e.aviary_id), kind: e.kind, count: e.count, notes: e.notes, staff: staff(e.staff_id) }));
     const sheet = breedingCsv(y, rows);
     await put(`breeding:${y}`, sheet, ['Breeding'], `Breeding ${y}.csv`, () => sheet, 'text/csv');
+  }
+
+  // 5) The zoo standards stock list for this year (and last year's in January)
+  const { data: info } = await db.from('species_info').select('species, scientific_name, iucn, hazard');
+  for (const y of today.slice(5, 7) === '01' ? [year - 1, year] : [year]) {
+    if (stop()) break;
+    const list = stockCsv(y, birds ?? [], info ?? []);
+    await put(`stock:${y}`, list, ['Stock list'], `Stock list ${y}.csv`, () => list, 'text/csv');
   }
 
   await db.from('onedrive_settings').update({ last_run_at: new Date().toISOString(), last_copied: copied, last_error: null }).eq('id', 1);

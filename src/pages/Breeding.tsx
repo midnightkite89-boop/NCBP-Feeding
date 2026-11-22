@@ -26,6 +26,8 @@ export function Breeding() {
   const [logs, setLogs] = useState<BreedingLog[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [logging, setLogging] = useState<{ aviary: Aviary; kind: BreedingKind } | null>(null);
+  // After logging a hatching: offer to add the chicks as birds (so they count as born on the stock list)
+  const [hatched, setHatched] = useState<{ aviary: Aviary; count: number; date: string } | null>(null);
   const year = new Date().getFullYear();
 
   const load = useCallback(async () => {
@@ -114,13 +116,35 @@ export function Breeding() {
           </article>
         );
       })}
+      {hatched && (
+        <Sheet title={`${aviaryLabel(hatched.aviary)}: add the chicks`} onClose={() => setHatched(null)}>
+          <p className="muted">
+            Adding each chick as a bird puts it on the round and counts it as born on the stock list. You can give it a name and sex later.
+          </p>
+          <div className="more-list">
+            {Array.from({ length: hatched.count }, (_, i) => {
+              const species = birdsIn(hatched.aviary)[0]?.species ?? '';
+              const q = new URLSearchParams({ born: hatched.date, aviary: hatched.aviary.id, species, name: `${species || 'Chick'} chick ${hatched.date.slice(0, 4)} ${i + 1}` });
+              return (
+                <Link key={i} to={`/admin/birds/new?${q}`}>
+                  + Add chick {i + 1}
+                </Link>
+              );
+            })}
+          </div>
+          <button className="btn btn-outline btn-lg" onClick={() => setHatched(null)}>
+            Not now
+          </button>
+        </Sheet>
+      )}
       {isAdmin && <ChooseBreeding aviaries={aviaries} onSaved={refresh} />}
       {logging && (
         <LogSheet
           aviary={logging.aviary}
           kind={logging.kind}
           onClose={() => setLogging(null)}
-          onSaved={async () => {
+          onSaved={async (count) => {
+            if (logging.kind === 'hatched' && isAdmin) setHatched({ aviary: logging.aviary, count, date: new Date().toISOString().slice(0, 10) });
             setLogging(null);
             await load();
           }}
@@ -130,7 +154,7 @@ export function Breeding() {
   );
 }
 
-function LogSheet({ aviary, kind, onClose, onSaved }: { aviary: Aviary; kind: BreedingKind; onClose: () => void; onSaved: () => void }) {
+function LogSheet({ aviary, kind, onClose, onSaved }: { aviary: Aviary; kind: BreedingKind; onClose: () => void; onSaved: (count: number) => void }) {
   const k = KINDS.find((x) => x.kind === kind)!;
   const [count, setCount] = useState(1);
   const [notes, setNotes] = useState('');
@@ -142,7 +166,7 @@ function LogSheet({ aviary, kind, onClose, onSaved }: { aviary: Aviary; kind: Br
     const { error } = await supabase.from('breeding_logs').insert({ aviary_id: aviary.id, kind, count: k.counted ? count : null, notes: notes.trim() || null });
     setBusy(false);
     if (error) return setError("Couldn't save – no signal? Try again in a moment.");
-    onSaved();
+    onSaved(count);
   }
   return (
     <Sheet title={`${aviaryLabel(aviary)}: ${k.label.toLowerCase()}`} onClose={onClose}>

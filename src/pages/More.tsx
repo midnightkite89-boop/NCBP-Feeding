@@ -41,6 +41,7 @@ export function More() {
       {has('leftovers') && (
         <Group title="Records">
           <Item to="/feed-sheet" icon="sheet" label="Feed sheets" />
+          <Item to="/stock-list" icon="bird" label="Stock list (zoo standards)" />
         </Group>
       )}
 

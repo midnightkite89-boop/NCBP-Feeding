@@ -257,7 +257,9 @@ export async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): P
       const incoming = (Array.isArray(data) ? data : [data]) as Row[];
       const merge = prefer.includes('merge-duplicates');
       const added = incoming.map((r) => {
-        const existing = merge && r.id != null ? t.rows.find((x) => x.id === r.id) : undefined;
+        // Upserts match on the table's first column (its primary key: id, or e.g. species)
+        const pk = t.columns[0];
+        const existing = merge && r[pk] != null ? t.rows.find((x) => x[pk] === r[pk]) : undefined;
         if (existing) return Object.assign(existing, r);
         const full = withDefaults(table, r);
         t.rows.push(full);

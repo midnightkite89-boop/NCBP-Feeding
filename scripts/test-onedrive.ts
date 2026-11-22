@@ -1,7 +1,7 @@
 // Checks the files the OneDrive copier makes (no network). Writes a sample PDF to look at.
 // Usage: node --import ./scripts/ts-resolve.mjs scripts/test-onedrive.ts [out.pdf]
 import { writeFileSync } from 'node:fs';
-import { birdRecordPdf, breedingCsv, checkupPdf, healthLogCsv, scoreText, sumFeeds, weeklyRecordsCsv, weightText } from '../supabase/functions/onedrive-sync/index.ts';
+import { birdRecordPdf, breedingCsv, stockCsv, checkupPdf, healthLogCsv, scoreText, sumFeeds, weeklyRecordsCsv, weightText } from '../supabase/functions/onedrive-sync/index.ts';
 
 let failures = 0;
 const check = (name: string, ok: boolean, extra = '') => {
@@ -47,6 +47,15 @@ if (process.argv[3]) writeFileSync(process.argv[3], record);
 
 const b = breedingCsv(2026, [{ log_date: '2026-04-02', aviary: 'Eagle barn 7', kind: 'egg', count: 2, notes: 'both, "first"', staff: 'Kieran' }]);
 check('breeding row with quotes escaped', b.includes('02/04/2026,Eagle barn 7,Eggs laid,2,"both, ""first""",Kieran'), b.split('\r\n')[2]);
+
+// The server's stock list matches the zoo standards example (same sums as src/stock.ts)
+const sb = (sex: string, extra: object = {}) => ({ species: 'Wattled crane', scientific_name: null, sex, status: 'active', came_on: null, came_kind: null, left_on: null, left_kind: null, ...extra });
+const stock = stockCsv(2022, [
+  sb('M'), sb('M', { status: 'archived', left_on: '2022-05-01', left_kind: 'died' }), sb('F', { status: 'archived', left_on: '2022-08-01', left_kind: 'departed' }), sb('U'),
+  sb('F', { came_on: '2022-03-01', came_kind: 'arrived' }), sb('F', { came_on: '2022-03-01', came_kind: 'arrived' }), sb('U', { came_on: '2022-04-01', came_kind: 'arrived' }),
+  sb('U', { came_on: '2022-06-01', came_kind: 'born' }), sb('U', { came_on: '2022-06-01', came_kind: 'born' }),
+], [{ species: 'wattled crane', scientific_name: 'Bugeranus carunculatus', iucn: 'VU', hazard: '2P' }]);
+check('stock list row like the zoo standards', stock.split('\r\n')[1] === 'Wattled crane,Bugeranus carunculatus,VU,2P,2.1.1,0.2.1,0.0.2,1.0.0,0.1.0,1.2.4', stock.split('\r\n')[1]);
 
 const pdf = await checkupPdf(
   {
