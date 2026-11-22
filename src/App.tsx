@@ -31,6 +31,7 @@ import { NewOutingPage, OutingPage, OutingR6, OutingR7, OutingR8, OutingsPage } 
 import { Health, IssuePage, MedicationPage, NewIssue, NewMedication } from './pages/Health';
 import { CareAdmin } from './admin/CareAdmin';
 import { DriveAdmin } from './admin/DriveAdmin';
+import { OneDriveAdmin } from './admin/OneDriveAdmin';
 import { StoreProvider, useStore } from './store';
 import { configured } from './supabase';
 
@@ -110,6 +111,7 @@ function Gate() {
         <Route path="admin/qr" element={<AdminOnly><QrSheet /></AdminOnly>} />
         <Route path="admin/staff" element={<AdminOnly><StaffAdmin /></AdminOnly>} />
         <Route path="admin/drive" element={<AdminOnly><DriveAdmin /></AdminOnly>} />
+        <Route path="admin/onedrive" element={<AdminOnly><OneDriveAdmin /></AdminOnly>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

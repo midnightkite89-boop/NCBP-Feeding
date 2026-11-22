@@ -1290,3 +1290,4 @@ html, body { background: var(--bg); }
 .breeding-choose { display: flex; flex-wrap: wrap; gap: 6px; }
 /* Round mode: sit just under the round's own header (End round, progress) */
 .undo-bar.no-tabs { top: calc(64px + env(safe-area-inset-top)); }
+.ok-note { padding: 8px 12px; border-radius: 12px; background: var(--fed-bg); color: var(--fed); font-weight: 600; }

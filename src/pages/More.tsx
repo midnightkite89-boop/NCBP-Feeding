@@ -78,6 +78,7 @@ export function More() {
             {has('ferrets') && <Item to="/ferrets" icon="ferret" label="Ferret food list and cages" />}
             <Item to="/admin/staff" icon="staff" label="Staff" />
             {has('driveSync') && <Item to="/admin/drive" icon="folder" label="Google Drive copying" />}
+            {has('oneDrive') && <Item to="/admin/onedrive" icon="folder" label="OneDrive copying" />}
           </Group>
         </>
       )}

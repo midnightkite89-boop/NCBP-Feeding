@@ -46,3 +46,19 @@ where p.id = (select id from auth.users where email = v.email);
 - [x] **Flying board (19 Nov 2026):** Supabase → SQL Editor → paste all of `supabase/migrations/025_flight_timetable.sql` → **Run**. Then a new query with `../ncbp/ncbp-update-2026-11-19.sql` → **Run** (placeholder demo times 11:30 / 13:30 / 15:30). Both safe to run twice.
 - [x] **Visit changes (21 Nov 2026):** Supabase → SQL Editor → paste all of `supabase/migrations/026_health_form_breeding.sql` → **Run** (health check form, ZIMS tick, breeding). Safe to run twice.
 - [ ] **Go live (when staff start for real):** run `../ncbp/ncbp-GO-LIVE.sql`. Clears every logged record; keeps birds, aviaries, staff and settings. Can't be undone.
+
+## OneDrive copying (22 Nov 2026)
+
+Health check PDFs, weekly feed sheets and breeding records are copied into a OneDrive folder every 30 minutes.
+Microsoft app registration is done (client ID `ead7c9dc-355a-42b4-a286-2ba20efcbb90`, redirect `https://srfkqpnqtkbgcsygiowa.supabase.co/functions/v1/onedrive-auth`).
+
+- [ ] **SQL Editor:** paste all of `supabase/migrations/027_onedrive.sql` → **Run**.
+- [ ] **Edge Functions → Secrets → Add new secret**, four times:
+  - `MS_CLIENT_ID` = `ead7c9dc-355a-42b4-a286-2ba20efcbb90`
+  - `MS_CLIENT_SECRET` = the secret **Value** you copied from Azure (Certificates & secrets)
+  - `APP_URL` = `https://ncbp-app.netlify.app`
+  - `ONEDRIVE_SYNC_KEY` = the key on line 4 of `../ncbp/ncbp-onedrive-schedule.sql` (after `--`)
+- [ ] **Edge Functions → Deploy a new function → Via editor**, name `onedrive-auth`: replace everything with `supabase/functions/onedrive-auth/index.ts` → **Deploy**. Then open the function's **Details** and turn **off** "Verify JWT with legacy secret" / "Enforce JWT verification" → Save.
+- [ ] Same again for `onedrive-sync` with `supabase/functions/onedrive-sync/index.ts`, and turn Verify JWT **off** too.
+- [ ] **SQL Editor:** paste all of `../ncbp/ncbp-onedrive-schedule.sql` → **Run** (copies every 30 minutes).
+- [ ] **In the app** (after Claude pushes): More → OneDrive copying → check the folder name → **Connect OneDrive**. The OneDrive's owner signs in and taps **Allow**. Then **Copy now**.

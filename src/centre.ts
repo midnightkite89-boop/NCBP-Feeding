@@ -37,6 +37,8 @@ export const CENTRE = {
     aalForms: false,
     /** Copying photos and doses into a Google Drive folder per bird */
     driveSync: false,
+    /** Copying health check PDFs, feed sheets and breeding records into a OneDrive folder */
+    oneDrive: true,
     /** Food left over, logged per bird with a trend flag */
     leftovers: true,
     /** Breeding aviaries: nest checks, eggs, hatchings */

@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "npm:@supabase/supabase-js@2.45.4": ["./node_modules/@supabase/supabase-js"],
+      "npm:pdf-lib@1.17.1": ["./node_modules/pdf-lib"]
+    }
+  },
+  "include": ["supabase/functions/onedrive-auth", "supabase/functions/onedrive-sync", "supabase/functions/_types"]
+}
